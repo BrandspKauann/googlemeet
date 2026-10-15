@@ -22,6 +22,12 @@ O teste de interface usou câmera e apresentação sintéticas, eventos de recon
 
 ## Implantação
 
+### Legendas na lateral esquerda
+
+Os balões da professora e do aluno ficam empilhados na coluna esquerda, tanto na chamada quanto no compartilhamento. O material ocupa a coluna central com a altura disponível; as câmeras ficam à direita em telas amplas. A coluna de legendas adapta a largura em telas menores, mantém rolagem interna para falas longas e continua visível ao expandir o material ou usar tela cheia. A proporção original do vídeo é preservada.
+
+Verificação em navegador separado: posições dos dois balões à esquerda do material, empilhamento vertical, ausência de sobreposição com controles, zoom/arraste do aluno, modo expandido e tela cheia. Oito dimensões: 1920×1080, 1440×900, 1366×768, 1024×768, 768×1024, 390×844, 360×640 e 844×390. Capturas e medidas em `data/qa/left-captions-*` (somente local).
+
 ### Zoom local do conteúdo compartilhado
 
 O espectador de uma tela compartilhada tem controles de 100% a 400%, em passos de 25%, com ajuste ao enquadramento completo. Pode mover o conteúdo ampliado com arraste do mouse/toque, setas ou rolagem. Os limites de movimento consideram a proporção original do vídeo. O zoom não altera o compartilhamento nem a visualização dos outros participantes; é reiniciado quando o compartilhamento termina ou a fonte muda.
