@@ -1,4 +1,8 @@
 const $=id=>document.getElementById(id);
+const passwordField=$('password'),passwordToggle=$('togglePassword');
+function setPasswordVisible(visible){passwordField.type=visible?'text':'password';passwordToggle.setAttribute('aria-pressed',String(visible));passwordToggle.setAttribute('aria-label',visible?'Ocultar senha':'Mostrar senha');passwordToggle.title=visible?'Ocultar senha':'Mostrar senha';}
+passwordToggle.onclick=()=>setPasswordVisible(passwordField.type==='password');
+$('authForm').addEventListener('submit',()=>setPasswordVisible(false));
 const names={pt:'Português',en:'English',es:'Español',zh:'中文 — Mandarim'};
 let roomId=new URLSearchParams(location.search).get('room'),token='',state,cursor=0,pollTimer,closing=false,finished=false,lastApproval='',transcriptCursor='0',historyCursor='0',profile,transcriptsLoaded=false;
 let cameraStream,audioStream,screenStream,viewLang='en',translationQueue=Promise.resolve(),sending=new Set();
