@@ -11,8 +11,11 @@ test('PostgreSQL cloud API isolates rooms, persists sessions, pages encrypted sp
  async function req(p,b,token,cookie){const res=await fetch(base+'/api/'+p,{method:b===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(cookie?{Cookie:cookie}:{})},...(b===undefined?{}:{body:JSON.stringify(b)})});return {status:res.status,data:await res.json(),cookie:res.headers.get('set-cookie')?.split(';')[0]}}
  try{
   const login=await req('auth',{mode:'register',name:'Professora',email:'cloud@example.test',password:'test-password'});assert.equal(login.status,200);const cookie=login.cookie;
-  const r=(await req('rooms',{title:'Aula privada',language:'pt'},null,cookie)).data;assert.equal(r.encrypted,true);assert.equal(r.transcripts,undefined);const route='rooms/'+r.id;
-  const joined=(await req(route+'/join',{name:'Aluno',language:'zh'})).data;assert.equal((await req(route+'/transcripts',undefined,joined.token)).status,403);
+  const r=(await req('rooms',{title:'Aula privada',language:'pt',targetLanguage:'zh',name:'Nome escolhido na aula'},null,cookie)).data;assert.equal(r.encrypted,true);assert.equal(r.transcripts,undefined);assert.equal(r.you.name,'Nome escolhido na aula');assert.equal(r.teacherLanguage,'pt');assert.equal(r.studentLanguage,'zh');const route='rooms/'+r.id;
+  assert.equal((await req('rooms',{language:'pt',targetLanguage:'invalid'},null,cookie)).status,400);
+  const info=(await req(route+'/info')).data;assert.equal(info.studentLanguage,'zh');
+  // Even a modified client cannot override the teacher's selected student language.
+  const joined=(await req(route+'/join',{name:'Aluno',language:'en'})).data;assert.equal(joined.you.language,'zh');assert.equal((await req(route+'/transcripts',undefined,joined.token)).status,403);
   assert.equal((await req(route+'/admit',{id:joined.you.id,accept:true},joined.token)).status,403);await req(route+'/admit',{id:joined.you.id,accept:true},r.token);
   const second=(await req('rooms',{title:'Outra professora'},null,cookie)).data;assert.equal((await req(route+'/state',undefined,second.token)).status,401);
   assert.equal((await req(route+'/transcript',{text:'Nunca salvar em claro'},r.token)).status,400);
@@ -27,7 +30,7 @@ test('PostgreSQL cloud API isolates rooms, persists sessions, pages encrypted sp
   const page=(await req(route+'/transcripts?after=0',undefined,joined.token)).data;assert.equal(page.records.length,100);assert.equal(page.more,true);const tail=(await req(route+'/transcripts?after='+page.cursor,undefined,joined.token)).data;assert.equal(tail.records.length,6);assert.equal(tail.more,false);
   const latest=(await req(route+'/transcripts?latest=true',undefined,joined.token)).data;assert.equal(latest.records.length,100);assert.equal(latest.more,true);
   const polling=(await req(route+'/events?since=0',undefined,joined.token)).data;assert.equal(polling.state.transcripts,undefined);assert.equal(JSON.stringify(polling).includes(phrase),false);
-  handler=createCloudHandler(()=>db);assert.equal((await req('me',undefined,null,cookie)).status,200);
+  handler=createCloudHandler(()=>db);assert.equal((await req('me',undefined,null,cookie)).status,200);assert.equal((await req(route+'/state',undefined,joined.token)).data.studentLanguage,'zh');
   await req(route+'/media',{microphone:true},joined.token);
   assert.equal((await req(route+'/end',{},joined.token)).status,403);const ending=(await req(route+'/end',{},r.token)).data;assert.equal(ending.ending,true);
   // A slower Whisper job may still be draining after the previous 30-second deadline.

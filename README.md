@@ -20,8 +20,8 @@ Para conectar à Vercel e ao Neon, siga [VERCEL-NEON.md](VERCEL-NEON.md). O cód
 Execute `npm start` nesta pasta e abra http://localhost:4178 no Chrome.
 
 1. Crie a conta local da professora (nome, e-mail e senha de pelo menos 8 caracteres).
-2. Crie a sala e copie o convite.
-3. Para testar neste computador, abra o convite numa nova aba independente ou janela anônima; informe nome e idioma do aluno.
+2. Escolha seu nome na aula, seu idioma e o idioma do aluno. Crie a sala e copie o convite.
+3. Para testar neste computador, abra o convite numa nova aba independente ou janela anônima; informe somente o nome do aluno. A sala aplica o idioma definido pela professora.
 4. Aceite o pedido na tela da professora. Ative câmera e microfone em cada lado. Use fones para evitar retorno de áudio.
 5. Clique em Preparar tradução em cada navegador. Se novos idiomas entrarem, prepare novamente.
 6. Compartilhe uma janela, aba ou tela pelo botão Compartilhar tela.

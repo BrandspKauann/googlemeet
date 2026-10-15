@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS ag_rooms (
  started_at timestamptz NOT NULL DEFAULT now(), ended_at timestamptz,
  end_requested_at timestamptz, end_deadline timestamptz
 );
+ALTER TABLE ag_rooms ADD COLUMN IF NOT EXISTS student_language text CHECK (student_language IN ('pt','en','es','zh'));
 CREATE TABLE IF NOT EXISTS ag_participants (
  id text PRIMARY KEY, room_id text NOT NULL REFERENCES ag_rooms(id), name text NOT NULL,
  language text NOT NULL CHECK (language IN ('pt','en','es','zh')),

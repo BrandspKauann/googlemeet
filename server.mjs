@@ -16,7 +16,7 @@ export function createApp(dataDir=path.join(root,'data'),asrConfig={url:'http://
  const fail=(code,message)=>{throw Object.assign(new Error(message),{code})};
  const emit=(r,type,data,to)=>{let list=events.get(r.id)||[];list.push({seq:(list.at(-1)?.seq||0)+1,type,data,to});events.set(r.id,list.slice(-2000))};
  const publicMember=m=>({id:m.id,generation:m.generation||0,name:m.name,language:m.language,role:m.role,status:m.status,online:m.online,media:m.media||{}});
- const state=(r,m)=>({id:r.id,cursor:(events.get(r.id)||[]).at(-1)?.seq||0,title:r.title,ended:r.ended,ending:!!r.ending,startedAt:r.startedAt,you:publicMember(m),members:r.members.filter(x=>x.status==='accepted'||m.role==='teacher').map(publicMember),transcripts:m.status==='accepted'?r.transcripts:[],iceServers:[{urls:'stun:stun.l.google.com:19302'}],localOnly:true});
+ const state=(r,m)=>({id:r.id,cursor:(events.get(r.id)||[]).at(-1)?.seq||0,title:r.title,teacherLanguage:r.members.find(x=>x.role==='teacher')?.language||'pt',studentLanguage:r.studentLanguage||r.members.find(x=>x.role==='student')?.language||'en',ended:r.ended,ending:!!r.ending,startedAt:r.startedAt,you:publicMember(m),members:r.members.filter(x=>x.status==='accepted'||m.role==='teacher').map(publicMember),transcripts:m.status==='accepted'?r.transcripts:[],iceServers:[{urls:'stun:stun.l.google.com:19302'}],localOnly:true});
  const member=(req,r)=>{const token=req.headers.authorization?.replace(/^Bearer /,'');const m=r.members.find(m=>m.token===token);if(!m)fail(401,'Entrada não autorizada. Abra novamente o link da sala.');return m};
  const accepted=m=>{if(m.status!=='accepted')fail(403,'Aguarde a aprovação da professora.')};
  const teacher=m=>{accepted(m);if(m.role!=='teacher')fail(403,'Somente a professora pode realizar esta ação.')};
@@ -46,15 +46,15 @@ export function createApp(dataDir=path.join(root,'data'),asrConfig={url:'http://
     try{const response=await fetch(asrConfig.url+'/health',{headers:{Authorization:'Bearer '+asrConfig.secret},signal:AbortSignal.timeout(2000)});if(!response.ok)throw new Error();const health=await response.json();json({...health,error:health.error?'Falha ao carregar o modelo local. Verifique o terminal.':null});}catch{json({ready:false,error:'Motor local iniciando ou indisponível. Aguarde e verifique novamente.'})}return;
    }
    if(p==='/api/rooms'&&req.method==='POST'){
-    const u=user(req),b=await body(req);const m={id:id(),token:id(),name:u.name,language:lang(b.language),role:'teacher',status:'accepted',online:true,lastSeen:Date.now()};
-    const r={id:id(),owner:u.id,title:text(b.title,100)||'Aula Global',startedAt:new Date().toISOString(),ended:false,members:[m],transcripts:[]};db.rooms.push(r);save();json({roomId:r.id,token:m.token,...state(r,m)});return;
+    const u=user(req),b=await body(req);const m={id:id(),token:id(),name:text(b.name,60)||u.name,language:lang(b.language),role:'teacher',status:'accepted',online:true,lastSeen:Date.now()};
+    if(b.targetLanguage!==undefined&&!['pt','en','es','zh'].includes(b.targetLanguage))fail(400,'Idioma de tradução inválido.');const r={studentLanguage:b.targetLanguage||null,id:id(),owner:u.id,title:text(b.title,100)||'Aula Global',startedAt:new Date().toISOString(),ended:false,members:[m],transcripts:[]};db.rooms.push(r);save();json({roomId:r.id,token:m.token,...state(r,m)});return;
    }
    const match=p.match(/^\/api\/rooms\/([a-f0-9]{48})(?:\/([a-z]+))?$/);
    if(match){const r=db.rooms.find(r=>r.id===match[1]);if(!r)fail(404,'Sala não encontrada.');const action=match[2]||'state';
-    if(action==='info'){json({title:r.title,ended:r.ended,teacherLanguage:r.members.find(m=>m.role==='teacher')?.language||'pt'});return}
+    if(action==='info'){json({title:r.title,ended:r.ended,teacherLanguage:r.members.find(m=>m.role==='teacher')?.language||'pt',studentLanguage:r.studentLanguage||'en'});return}
     if(action==='join'&&req.method==='POST'){
      if(r.ended||r.ending)fail(409,'Esta reunião já foi encerrada ou está encerrando.');if(r.members.filter(m=>m.status!=='rejected'&&m.online).length>=6)fail(409,'Esta versão aceita até 6 participantes por sala.');const b=await body(req),name=text(b.name,60);if(!name)fail(400,'Informe seu nome.');
-     const m={id:id(),token:id(),name,language:lang(b.language),role:'student',status:'pending',online:true,lastSeen:Date.now()};r.members.push(m);emit(r,'members',{});save();json({roomId:r.id,token:m.token,...state(r,m)});return;
+     const m={id:id(),token:id(),name,language:r.studentLanguage||lang(b.language),role:'student',status:'pending',online:true,lastSeen:Date.now()};r.members.push(m);emit(r,'members',{});save();json({roomId:r.id,token:m.token,...state(r,m)});return;
     }
     const m=member(req,r);m.lastSeen=Date.now();if(m.status==='accepted'&&!r.ended&&!m.online){m.online=true;emit(r,'members',{})}
     if(action==='resume'&&req.method==='POST'){m.generation=(m.generation||0)+1;m.media={};emit(r,'members',{});save();json(state(r,m));return}
