@@ -1,0 +1,6 @@
+(() => {
+ let connection;
+ function db(){if(!connection)connection=new Promise((resolve,reject)=>{const req=indexedDB.open('aula-global-durable',1);req.onupgradeneeded=()=>{req.result.createObjectStore('outbox',{keyPath:'id'});req.result.createObjectStore('access',{keyPath:'roomId'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});return connection}
+ async function operation(store,mode,fn){const database=await db();return new Promise((resolve,reject)=>{const tx=database.transaction(store,mode),request=fn(tx.objectStore(store));let result;request.onsuccess=()=>result=request.result;request.onerror=()=>reject(request.error);tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Falha no armazenamento local.'))})}
+ window.durableQueue={async put(record){return operation('outbox','readwrite',s=>s.put(record))},async remove(id){return operation('outbox','readwrite',s=>s.delete(id))},async list(roomId,memberId){return (await operation('outbox','readonly',s=>s.getAll())).filter(r=>r.roomId===roomId&&r.memberId===memberId)},async saveAccess(record){return operation('access','readwrite',s=>s.put(record))},async access(roomId){return operation('access','readonly',s=>s.get(roomId))}};
+})();

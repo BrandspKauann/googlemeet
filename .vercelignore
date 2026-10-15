@@ -1,0 +1,17 @@
+data
+.venv
+.openai
+__pycache__
+*.py
+*.test.mjs
+check-live.cjs
+requirements-asr.txt
+dist/app.js
+dist/live.js
+server.mjs
+dev-cloud.mjs
+.env*
+
+benchmarks
+dist/asr-compare.html
+dist/asr-compare.js

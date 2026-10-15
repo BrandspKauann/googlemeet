@@ -1,0 +1,26 @@
+{
+  "name": "aula-global",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test server.test.mjs local-asr.test.mjs cloud.test.mjs durable-security.test.mjs educational-quotes.test.mjs browser-asr.test.mjs",
+    "dev:cloud": "node dev-cloud.mjs",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate-db.mjs",
+    "build": "node scripts/build-browser-asr.mjs",
+    "prestart": "npm run build",
+    "predev:cloud": "npm run build"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.3.1",
+    "@neondatabase/serverless": "^1.2.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "esbuild": "0.28.2",
+    "fake-indexeddb": "^6.2.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

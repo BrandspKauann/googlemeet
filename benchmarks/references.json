@@ -1,0 +1,41 @@
+[
+  {
+    "Text": "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+    "File": "pt.wav",
+    "Voice": "Microsoft Maria Desktop"
+  },
+  {
+    "Text": "老师你好。今天我们一起学习中文。请问你能听到我的声音吗？",
+    "File": "zh.wav",
+    "Voice": "Microsoft Huihui Desktop"
+  },
+  {
+    "Text": "Hello teacher. Today we will learn together. Can you hear my voice?",
+    "File": "en.wav",
+    "Voice": "Microsoft Zira Desktop"
+  },
+  {
+    "File": "pt-question.wav",
+    "Text": "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+    "TestType": "synthetic Windows TTS",
+    "Language": "pt"
+  },
+  {
+    "File": "pt-numbers.wav",
+    "Text": "A aula começa às dez e trinta. O valor é três vírgula quatorze. Hoje é dia doze de outubro.",
+    "TestType": "synthetic Windows TTS",
+    "Language": "pt"
+  },
+  {
+    "File": "pt-terms.wav",
+    "Text": "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+    "TestType": "synthetic Windows TTS",
+    "Language": "pt"
+  },
+  {
+    "File": "pt-silence.wav",
+    "Language": "pt",
+    "Text": "",
+    "TestType": "synthetic silence"
+  }
+]

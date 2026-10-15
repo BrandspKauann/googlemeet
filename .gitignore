@@ -1,0 +1,13 @@
+data/
+*.log
+node_modules/
+.venv/
+__pycache__/
+.env*
+!.env.example
+.vercel/
+
+dist/whisper-worker.js
+dist/asr-runtime/
+dist/asr-fixture.wav
+dist/asr-licenses.txt

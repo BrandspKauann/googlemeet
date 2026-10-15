@@ -1,0 +1,12 @@
+import {build} from 'esbuild';
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+await build({entryPoints:[path.join(root,'browser-asr/worker.js')],outfile:path.join(root,'dist/whisper-worker.js'),bundle:true,format:'esm',platform:'browser',minify:true});
+const runtime=path.join(root,'node_modules/onnxruntime-web/dist');
+fs.mkdirSync(path.join(root,'dist/asr-runtime'),{recursive:true});
+for(const file of ['ort-wasm-simd-threaded.asyncify.wasm','ort-wasm-simd-threaded.asyncify.mjs'])fs.copyFileSync(path.join(runtime,file),path.join(root,'dist/asr-runtime',file));
+fs.copyFileSync(path.join(root,'browser-asr/fixture.wav'),path.join(root,'dist/asr-fixture.wav'));
+fs.writeFileSync(path.join(root,'dist/asr-licenses.txt'),'Transformers.js — Apache 2.0\n'+fs.readFileSync(path.join(root,'node_modules/@huggingface/transformers/LICENSE'),'utf8')+'\nONNX Runtime — MIT\n'+fs.readFileSync(path.join(root,'browser-asr/onnxruntime-LICENSE.txt'),'utf8'));
+console.log('Worker, runtime e amostra de validação preparados.');
