@@ -22,4 +22,10 @@ O teste de interface usou câmera e apresentação sintéticas, eventos de recon
 
 ## Implantação
 
+### Zoom local do conteúdo compartilhado
+
+O espectador de uma tela compartilhada tem controles de 100% a 400%, em passos de 25%, com ajuste ao enquadramento completo. Pode mover o conteúdo ampliado com arraste do mouse/toque, setas ou rolagem. Os limites de movimento consideram a proporção original do vídeo. O zoom não altera o compartilhamento nem a visualização dos outros participantes; é reiniciado quando o compartilhamento termina ou a fonte muda.
+
+Verificação adicional em navegador separado: recepção WebRTC de uma apresentação sintética, zoom em 200%, arraste, limite em 400%, retorno a 100%, atalhos de teclado, isolamento em relação à visualização da professora e controles em 1366×768, 390×844, 360×640 e 844×390. O fluxo anterior dos dois balões também passou.
+
 Executar `npm run db:migrate` antes de publicar. A mudança adiciona somente a coluna opcional `ag_rooms.student_language`; preserva salas, contas e transcrições existentes. A conexão do banco continua em variável de ambiente privada.

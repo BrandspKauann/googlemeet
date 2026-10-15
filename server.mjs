@@ -102,7 +102,7 @@ export function createApp(dataDir=path.join(root,'data'),asrConfig={url:'http://
     fail(404,'Ação não encontrada.');
    }
    if(p.startsWith('/api/'))fail(404,'Rota não encontrada.');
-   const safe=['/','/index.html','/style.css','/room.js','/presentation.js','/local-asr.js','/capture-processor.js','/durable.js','/security.js','/preflight.js','/educational-quotes.js','/asr-licenses.txt','/speech-engine.js','/asr-utils.js','/device-asr.js','/whisper-worker.js','/asr-fixture.wav','/asr-compare.html','/asr-compare.js'];if(!safe.includes(p)&&!/^\/asr-runtime\/[a-zA-Z0-9._-]+\.(?:mjs|wasm)$/.test(p))fail(404,'Arquivo não encontrado.');
+   const safe=['/','/index.html','/style.css','/room.js','/presentation.js','/screen-zoom.js','/local-asr.js','/capture-processor.js','/durable.js','/security.js','/preflight.js','/educational-quotes.js','/asr-licenses.txt','/speech-engine.js','/asr-utils.js','/device-asr.js','/whisper-worker.js','/asr-fixture.wav','/asr-compare.html','/asr-compare.js'];if(!safe.includes(p)&&!/^\/asr-runtime\/[a-zA-Z0-9._-]+\.(?:mjs|wasm)$/.test(p))fail(404,'Arquivo não encontrado.');
    const f=path.join(root,'dist',p==='/'?'index.html':p.slice(1));res.writeHead(200,{'Content-Type':p.endsWith('.txt')?'text/plain; charset=utf-8':p.endsWith('.wasm')?'application/wasm':p.endsWith('.wav')?'audio/wav':/\.(js|mjs)$/.test(p)?'text/javascript; charset=utf-8':p.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(fs.readFileSync(f));
   }catch(error){json({error:error.code?error.message:'Falha interna do servidor.'},error.code||500)}
  });return server;
