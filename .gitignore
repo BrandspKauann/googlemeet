@@ -11,3 +11,5 @@ dist/whisper-worker.js
 dist/asr-runtime/
 dist/asr-fixture.wav
 dist/asr-licenses.txt
+
+dist/openmakeup/

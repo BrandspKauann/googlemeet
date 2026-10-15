@@ -63,3 +63,7 @@ O servidor escuta somente 127.0.0.1. **Convites localhost não funcionam em outr
 
 Testes: `npm test`. Testam autenticação, permissões, aprovação, sinalização privada, deduplicação, encerramento e recuperação de transcrição após reinício.
 
+# Maquiagem no navegador
+
+Veja [OpenMakeupSDK na câmera](BELEZA-OPENMAKEUP.md) para uso, origem, privacidade e limites da integração gratuita.
+

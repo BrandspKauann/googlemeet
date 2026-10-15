@@ -7,13 +7,17 @@
     "test": "node --test server.test.mjs local-asr.test.mjs cloud.test.mjs durable-security.test.mjs educational-quotes.test.mjs browser-asr.test.mjs",
     "dev:cloud": "node dev-cloud.mjs",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate-db.mjs",
-    "build": "node scripts/build-browser-asr.mjs",
+    "build": "node scripts/build-browser-asr.mjs && node scripts/build-beauty.mjs",
     "prestart": "npm run build",
     "predev:cloud": "npm run build"
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.1",
-    "@neondatabase/serverless": "^1.2.0"
+    "@mediapipe/camera_utils": "0.3.1675466862",
+    "@mediapipe/face_mesh": "0.4.1633559619",
+    "@neondatabase/serverless": "^1.2.0",
+    "open-makeup-sdk": "0.1.0",
+    "three": "0.184.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
