@@ -1,0 +1,21 @@
+GPUPixel browser adaptation for Aula Global
+
+Upstream: https://github.com/pixpark/gpupixel
+Pinned commit: ef552bf8ce2d0d41fa9b979bfb5c7cf79374ca88
+Copyright 2021 PixPark. Licensed under Apache-2.0 (LICENSE.txt).
+
+Source algorithms: src/filter/beauty_face_unit_filter.cc,
+src/filter/beauty_face_filter.cc, src/filter/face_reshape_filter.cc,
+src/filter/box_difference_filter.cc, src/filter/box_mono_blur_filter.cc.
+Lookup textures copied from src/res: lookup_gray.png, lookup_origin.png,
+lookup_skin.png, lookup_light.png.
+
+Modifications: shaders converted to GLSL ES 3.00; JavaScript WebGL2 render
+pipeline; original radius-4 box blur and difference formula; explicit final
+frame orientation; MediaPipe landmarks mapped to the subset of GPUPixel's
+106-point interface used for face slimming and eye enlargement; parameter
+scaling for the classroom UI; neutral output when no face is tracked.
+
+This is a browser adaptation of selected filters, not the official complete
+GPUPixel SDK. The native face detector and commercial SDKs are not included.
+The auxiliary tracker is MediaPipe, not GPUPixel's native detector.

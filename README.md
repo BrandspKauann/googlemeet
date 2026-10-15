@@ -29,6 +29,8 @@ Execute `npm start` nesta pasta e abra http://localhost:4178 no Chrome.
 
 ## Modo apresentação
 
+O botão **✧ Beleza**, exclusivo da professora, oferece efeitos gratuitos adaptados do GPUPixel. Veja [BELEZA-GPUPIXEL.md](BELEZA-GPUPIXEL.md) para origem, licença, uso e limitações. O efeito é opcional e vem desligado.
+
 Ao iniciar ou receber compartilhamento de tela, o material ocupa a área principal. A legenda fica diretamente abaixo, com câmeras compactas ao lado (ou numa faixa no celular). Idiomas e transcrição ficam num painel recolhível. Use Ativar tradução para preparar os idiomas e os controles Letra, Original e Expandir para ajustar a leitura. Preferências de letra e original ficam no navegador; o idioma de leitura fica na sessão da sala.
 
 O botão Legenda flutuante usa Document Picture-in-Picture quando disponível para acompanhar o texto ao apresentar em outro programa. Esse recurso precisa de validação no Chrome de desktop; o navegador embutido pode não abrir a janela. A janela acompanha a última legenda e fecha ao sair da sala. Se compartilhar a tela inteira, o sistema de captura pode incluir a janela flutuante; compartilhar só a janela da apresentação evita mostrar elementos de outras janelas.

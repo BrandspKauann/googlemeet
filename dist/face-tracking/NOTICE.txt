@@ -1,0 +1,13 @@
+Face tracking wrapper only (no beauty rendering algorithms)
+Adapted/copied from https://github.com/ctbot000/face-beautifier
+Pinned commit: ca5ad40b58e2d0133de6b22282b29000d3667046
+Files: facemesh.js, onefilter.js, landmarks.js. MIT license in LICENSE.txt.
+
+Runtime: Google MediaPipe Tasks Vision 1.0.1 (Apache-2.0).
+https://github.com/google-ai-edge/mediapipe
+https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/
+Model: face_landmarker/face_landmarker/float16/1/face_landmarker.task
+https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker
+
+Runtime and model download on explicit filter activation. Video frames are
+processed in the browser; no beauty API or commercial license is used.
