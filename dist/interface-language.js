@@ -69,6 +69,7 @@
   const protectedContent='script,style,svg,textarea,#transcript,#caption[data-user-content],#studentCaption[data-user-content],#original,#studentOriginal,#captionSpeaker,#studentCaptionSpeaker,#selfName,#selfLabel,#selfInitial,#meetingTitle,#joinTitle,#sessionTitle[data-user-content],.tilelabel,.bubble-name,.bubble-avatar,.avatar,#interfaceLanguage';
   function translate(text){
     if(dictionary[text])return dictionary[text];
+    const profile=text.match(/^Reconhecimento: (.+) → (.+)\. Tradução configurada separadamente\.$/);if(profile)return '语音识别：'+({Mandarim:'中文',Português:'葡萄牙语',Inglês:'英语',Espanhol:'西班牙语'}[profile[1]]||profile[1])+' → '+({Navegador:'浏览器','Whisper no dispositivo':'设备端 Whisper','Whisper local':'本地 Whisper'}[profile[2]]||profile[2])+'。翻译单独配置。';
     const request=text.match(/^(.+) quer entrar$/);if(request)return request[1]+' 申请加入';
     const ready=text.match(/^Tradução pronta\. As falas serão traduzidas para (.+)\.$/);if(ready)return '翻译已就绪，发言将翻译为'+(dictionary[ready[1]]||ready[1])+'。';
     const summary=text.match(/^Professora: (.+) ⇄ Aluno: (.+)\. Definidos antes de abrir a sala\.$/);if(summary)return '老师：'+(dictionary[summary[1]]||summary[1])+' ⇄ 学生：'+(dictionary[summary[2]]||summary[2])+'。创建课堂前设置。';

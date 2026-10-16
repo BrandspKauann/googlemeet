@@ -6,7 +6,7 @@
   const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!Recognition){config.status?.('Áudio conectado; reconhecimento indisponível. Use texto digitado.');await config.gap('Transcrição automática indisponível para este participante.');return {unavailable:true}}
   active=true;restarts=0;const current=++generation;native=new Recognition();
-  native.lang={pt:'pt-BR',en:'en-US',es:'es-ES',zh:'zh-CN'}[config.language];native.continuous=true;native.interimResults=true;
+  native.lang=window.languageRouting?.recognition(config.language).locale||{pt:'pt-BR',en:'en-US',es:'es-ES',zh:'zh-CN'}[config.language];native.continuous=true;native.interimResults=true;
   native.onstart=()=>{if(current===generation)config.status?.('Transcrição do navegador ativa.')};
   native.onresult=event=>{if(current!==generation)return;restarts=0;let interim='';for(let i=event.resultIndex;i<event.results.length;i++){const text=event.results[i][0].transcript.trim();if(event.results[i].isFinal)config.text(text);else interim+=text+' '}if(interim)config.phase('Reconhecendo a fala…')};
   native.onerror=event=>{
