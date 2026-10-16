@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Ouvir som compartilhado':'播放共享音频','Som da tela sendo compartilhado.':'正在共享屏幕声音。','Compartilhamento sem som. Pare e compartilhe novamente marcando Compartilhar áudio.':'当前共享没有声音。请停止并重新共享，勾选共享音频。','O som compartilhado foi interrompido. Pare e compartilhe novamente com áudio.':'共享音频已中断，请停止并重新共享音频。','Marque Compartilhar áudio na janela do navegador. Para PowerPoint, escolha a tela inteira com áudio do sistema.':'请在浏览器窗口勾选共享音频。共享 PowerPoint 时，请选择整个屏幕并开启系统音频。',
     'Filtro de beleza':'美颜滤镜','Restaurar Porcelana':'恢复瓷肌设置','Porcelana ativado. Ligue a câmera para aplicar o filtro.':'瓷肌已启用，开启摄像头即可应用。','Efeito ativo. Filtro de beleza aplicado à câmera enviada ao aluno.':'美颜已启用，学生会看到处理后的画面。',
     'Aula Global — sua sala sem fronteiras':'Aula Global — 无国界课堂',
     'Um novo jeito de se entender.':'让沟通更轻松。','LOCALHOST':'本地环境','SALA PRIVADA':'私人课堂',

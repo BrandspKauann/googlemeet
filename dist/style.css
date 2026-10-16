@@ -54,3 +54,6 @@ body.in-meeting>.app-header{display:none}body.in-meeting #meeting{height:100dvh}
 .remote-video-retry{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;color:#174ea6;border:1px solid #a8c7fa;border-radius:24px;padding:12px 18px;max-width:90%}
 
 #interfaceLanguage{flex-shrink:0;border:1px solid #dadce0;border-radius:20px;background:#fff;color:#174ea6;font-size:13px;padding:8px 14px;min-height:36px;margin-left:10px}html[lang="zh-CN"] body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",Arial,sans-serif}html[lang="zh-CN"] .lobbyintro h1{line-height:1.25;letter-spacing:0} @media(max-width:600px){#interfaceLanguage{font-size:12px;padding:7px 10px;margin-left:6px}.app-header .session{display:none}}
+
+#shareAudioStatus{margin:0;padding:7px 12px;background:#e8f0fe;color:#174ea6;font-size:12px}#shareAudioStatus:empty{display:none}.screen-audio-retry{background:#e8f0fe;color:#174ea6;border-color:#a8c7fa;border-radius:18px}
+.screen-actions{max-width:100%;flex-wrap:wrap}.screenhead:has(.screen-audio-retry:not([hidden])){flex-wrap:wrap}
