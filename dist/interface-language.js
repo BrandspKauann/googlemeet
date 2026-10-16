@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Filtro de beleza':'美颜滤镜','Restaurar Porcelana':'恢复瓷肌设置','Porcelana ativado. Ligue a câmera para aplicar o filtro.':'瓷肌已启用，开启摄像头即可应用。','Efeito ativo. Filtro de beleza aplicado à câmera enviada ao aluno.':'美颜已启用，学生会看到处理后的画面。',
     'Aula Global — sua sala sem fronteiras':'Aula Global — 无国界课堂',
     'Um novo jeito de se entender.':'让沟通更轻松。','LOCALHOST':'本地环境','SALA PRIVADA':'私人课堂',
     'FEITO PARA ENSINAR. EM QUALQUER IDIOMA.':'为教学而生，不受语言限制。','Mais conversa.':'更多交流。','Menos fronteiras.':'更少隔阂。',

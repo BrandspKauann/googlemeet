@@ -12,7 +12,7 @@ O detector nativo do GPUPixel não foi incluído. O rastreamento auxiliar usa Go
 
 Na sala, a professora abre **✧ Beleza**, liga a câmera e ativa o efeito. Há suavização da pele (磨皮), luminosidade (提亮), contorno do rosto (瘦脸) e realce dos olhos (大眼), cada um com intensidade independente. Os presets são ajustes do Aula Global sobre esses filtros, não presets licenciados de aplicativos comerciais.
 
-O efeito vem desligado em cada carregamento da página. As intensidades são lembradas somente no navegador. **Ver original** altera apenas a prévia da professora: o aluno continua recebendo o efeito ativo. Desativar o efeito devolve a trilha original à chamada; desligar a câmera encerra tanto a trilha original quanto a processada. O compartilhamento de tela e o áudio não passam pelo filtro.
+O filtro combinado começa habilitado em Porcelana a cada nova aula. Os ajustes durante a aula não substituem esse padrão na aula seguinte. **Ver original** altera apenas a prévia da professora: o aluno continua recebendo o efeito ativo. Desativar o efeito devolve a trilha original à chamada; desligar a câmera encerra tanto a trilha original quanto a processada. O compartilhamento de tela e o áudio não passam pelo filtro.
 
 Os quadros são processados no dispositivo e enviados ao outro participante apenas pela chamada WebRTC. Não há upload para API de beleza, gravação de vídeo, chave comercial, licença com prazo ou cobrança por uso do filtro. O primeiro uso requer internet para baixar o runtime/modelo de rastreamento. A transmissão da aula continua dependendo da rede e da infraestrutura já usada pelo site.
 
