@@ -20,6 +20,7 @@ onmessage=({data})=>{
 };
 function dispose(){stopped=true;reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});mesh?.close();makeupMesh?.close();skin?.dispose();sdk?.dispose();}
 async function run({readable,writable,values:initial}){
+  const {cachedFetch}=await import('/beauty-cache.js');self.fetch=cachedFetch;
   const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js')]);
   values=initial;reader=readable.getReader();writer=writable.getWriter();
   const first=await reader.read();if(first.done)throw Error('A câmera foi encerrada.');
@@ -29,10 +30,12 @@ async function run({readable,writable,values:initial}){
   const input=new OffscreenCanvas(w,h),ctx=input.getContext('2d');
   const softened=new OffscreenCanvas(w,h),output=new OffscreenCanvas(w,h);
   skin=new Renderer(softened);await skin.ready;
+  postMessage({type:'status',message:'Preparando rastreamento facial…'});
   mesh=new FaceMesh();if(await mesh.load()!=='ready')throw Error('Não foi possível preparar o rastreamento facial.');
   makeupMesh=new FaceMesh();if(await makeupMesh.load()!=='ready')throw Error('Não foi possível preparar a maquiagem.');
   self.window=self;
   const video={videoWidth:w,videoHeight:h,readyState:2,HAVE_CURRENT_DATA:2,addEventListener(){},removeEventListener(){}};
+  postMessage({type:'status',message:'Carregando o filtro de beleza…'});
   sdk=new OpenMakeup({video,renderCanvas:output,assetsBaseUrl:'/openmakeup/assets'});
   const engine=sdk.engine;
   engine._resolveMediaPipeClasses=()=>{};engine._setupFaceMesh=()=>{};engine._setupCamera=()=>{engine._camera={start(){},stop(){}}};engine._animate=()=>{};

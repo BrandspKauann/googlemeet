@@ -1,3 +1,4 @@
+import { cachedFetch } from '../beauty-cache.js';
 import { OneEuroArray } from './onefilter.js';
 import { NUM_LANDMARKS } from './landmarks.js';
 
@@ -44,15 +45,18 @@ export class FaceMesh {
       onProgress('Starting WebAssembly runtime…');
       const fileset = await vision.FilesetResolver.forVisionTasks(`${CDN}/wasm`);
       onProgress('Loading face model (3.7 MB)…');
-      this.landmarker = await vision.FaceLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
+      const response=await cachedFetch(MODEL);if(!response.ok)throw Error('Falha ao baixar o modelo facial.');
+      const modelAssetBuffer=new Uint8Array(await response.arrayBuffer());
+      const options={
+        baseOptions: { modelAssetBuffer, delegate: 'GPU' },
         runningMode: 'VIDEO',
         numFaces: 1,
         minFaceDetectionConfidence: 0.4,
         minFacePresenceConfidence: 0.4,
         minTrackingConfidence: 0.4,
         outputFaceBlendshapes: false,
-      });
+      };
+      try{this.landmarker=await vision.FaceLandmarker.createFromOptions(fileset,options);}catch(gpuError){onProgress('Usando rastreamento compatível…');options.baseOptions.delegate='CPU';this.landmarker=await vision.FaceLandmarker.createFromOptions(fileset,options);}
       this.status = 'ready';
     } catch (err) {
       this.status = 'failed';

@@ -1,5 +1,6 @@
 // GPUPixel browser adapter. Copyright 2021 PixPark (algorithms), Apache-2.0.
 // See NOTICE.txt for pinned source files and the scope of this adaptation.
+import {cachedFetch} from '../beauty-cache.js';
 import {BEAUTY_VERTEX,BEAUTY_FRAGMENT,RESHAPE_FRAGMENT} from './shaders.js';
 const VERT=`#version 300 es
 in vec2 position;in vec2 inputTextureCoordinate;out vec2 textureCoordinate;
@@ -33,7 +34,7 @@ export class Renderer{
       this.copy=this.program(VERT,COPY);this.blur=this.program(VERT,BLUR);this.diff=this.program(VERT,DIFF);this.reshape=this.program(VERT,RESHAPE_FRAGMENT);this.beauty=this.program(BEAUTY_VERTEX,BEAUTY_FRAGMENT);
       this.buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,0,0,1,-1,1,0,-1,1,0,1,1,1,1,1]),gl.STATIC_DRAW);
       this.source=this.texture();this.luts=[];
-      this.ready=Promise.all(['gray','origin','skin','light'].map(async name=>{const url=new URL('./lookup_'+name+'.png',import.meta.url).href;let image;if(typeof Image==='undefined'){const response=await fetch(url);if(!response.ok)throw Error('Não foi possível carregar o filtro.');image=await createImageBitmap(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});}else{image=new Image();image.src=url;await image.decode();}try{if(this.disposed)return null;const tex=this.texture();this.upload(tex,image);return tex;}finally{image.close?.();}})).then(tex=>{this.luts=tex});
+      this.ready=Promise.all(['gray','origin','skin','light'].map(async name=>{const url=new URL('./lookup_'+name+'.png',import.meta.url).href;let image;if(typeof Image==='undefined'){const response=await cachedFetch(url);if(!response.ok)throw Error('Não foi possível carregar o filtro.');image=await createImageBitmap(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});}else{image=new Image();image.src=url;await image.decode();}try{if(this.disposed)return null;const tex=this.texture();this.upload(tex,image);return tex;}finally{image.close?.();}})).then(tex=>{this.luts=tex});
     }catch(error){this.dispose();throw error}
   }
   program(vertex,fragment){const gl=this.gl,shaders=[];const id=gl.createProgram();try{for(const [type,src]of [[gl.VERTEX_SHADER,vertex],[gl.FRAGMENT_SHADER,fragment]]){const sh=gl.createShader(type);shaders.push(sh);gl.shaderSource(sh,src);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw Error('Falha no filtro GPUPixel: '+gl.getShaderInfoLog(sh));gl.attachShader(id,sh)}gl.linkProgram(id);if(!gl.getProgramParameter(id,gl.LINK_STATUS))throw Error('Falha ao ligar o filtro GPUPixel: '+gl.getProgramInfoLog(id));const p={id,locations:new Map()};this.programs.push(p);return p}finally{for(const sh of shaders)gl.deleteShader(sh)}}

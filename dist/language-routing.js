@@ -1,13 +1,13 @@
 (() => {
   const definitions=Object.freeze({
     zh:Object.freeze({name:'Mandarim',engine:'browser',locale:'zh-CN'}),
-    pt:Object.freeze({name:'Português',engine:'device',locale:'pt-BR'}),
+    pt:Object.freeze({name:'Português',engine:'browser',locale:'pt-BR'}),
     en:Object.freeze({name:'Inglês',engine:'browser',locale:'en-US'}),
     es:Object.freeze({name:'Espanhol',engine:'browser',locale:'es-ES'})
   });
   const capabilities={browser:['zh','pt','en','es'],device:['zh','pt','en','es'],paraformer:[],local:['zh','pt','en','es']};
-  const storageKey='aulaRecognitionByLanguageV1';
-  let choices={};try{const saved=JSON.parse(localStorage.getItem(storageKey)||'{}');if(saved&&typeof saved==='object')for(const [language,engine]of Object.entries(saved))if(definitions[language]&&capabilities[engine]?.includes(language))choices[language]=language==='zh'?'browser':engine;}catch{}
+  const storageKey='aulaRecognitionSimpleV2';
+  let choices={};try{const saved=JSON.parse(localStorage.getItem(storageKey)||'{}');if(saved&&typeof saved==='object')for(const [language,engine]of Object.entries(saved))if(definitions[language]&&capabilities[engine]?.includes(language))choices[language]=engine;}catch{}
   // Remove only the retired model cache, leaving transcripts and other models intact.
   window.caches?.delete('aula-paraformer-1.12.33').catch(()=>{});
   function recognition(language){const definition=definitions[language];if(!definition)throw Error('Idioma de reconhecimento não suportado.');return {...definition,language,engine:choices[language]||definition.engine};}

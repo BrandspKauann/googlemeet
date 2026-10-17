@@ -3,7 +3,7 @@
   const workspace=document.createElement('div');workspace.className='lesson-workspace';room.insertBefore(workspace,el('tiles'));workspace.append(el('screenStage'),el('tiles'),caption);
   aside.id='lessonPanel';aside.hidden=true;
   const actions=document.createElement('div');actions.className='room-actions';
-  const quick=document.createElement('button');quick.id='quickTranslate';quick.className='primary';quick.textContent='Ativar tradução';quick.onclick=()=>{if(el('prepareTranslate').disabled)return;panel(true);el('prepareTranslate').click()};
+  const quick=document.createElement('button');quick.id='quickTranslate';quick.className='primary';quick.textContent='Tentar tradução novamente';quick.hidden=true;quick.onclick=()=>{if(el('prepareTranslate').disabled)return;el('prepareTranslate').click()};
   const toggle=document.createElement('button');toggle.id='panelToggle';toggle.textContent='Conversa';toggle.setAttribute('aria-controls','lessonPanel');toggle.setAttribute('aria-expanded','false');
   actions.append(quick,toggle);room.querySelector('.roomhead').append(actions);
   function panel(open){aside.hidden=!open;meeting.classList.toggle('panel-open',open);toggle.setAttribute('aria-expanded',String(open));toggle.classList.toggle('selected',open)}
@@ -35,6 +35,6 @@
     phase(text,role=selfRole){lane(role).status.textContent=text;updateFloating()},openPanel:()=>panel(true),closeFloating(){pip?.close()}
   };
   // Keep technical recognition settings available on demand, outside the conversation.
-  window.addEventListener('DOMContentLoaded',()=>{const advanced=document.createElement('details');advanced.className='recognition-settings';const title=document.createElement('summary');title.textContent='Opções de reconhecimento';advanced.append(title);for(const id of ['speechEngine','asrStatus','checkASR','autoPunctuation','punctuationStatus']){const node=el(id);if(node)advanced.append(node.closest('label')||node)}const cancel=el('cancelRecognitionPreparation');if(cancel)advanced.append(cancel);document.querySelector('.livebox').append(advanced)});
+  window.addEventListener('DOMContentLoaded',()=>{const advanced=document.createElement('details');advanced.className='recognition-settings';const title=document.createElement('summary');title.textContent='Ajustes avançados de voz';advanced.append(title);for(const id of ['speechEngine','asrStatus','checkASR','autoPunctuation','punctuationStatus','recognitionProfile']){const node=el(id);if(node)advanced.append(node.closest('label')||node)}const cancel=el('cancelRecognitionPreparation');if(cancel)advanced.append(cancel);document.querySelector('.livebox').append(advanced)});
   applyPreferences();window.addEventListener('pagehide',()=>pip?.close());
 })();

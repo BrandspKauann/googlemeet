@@ -12,8 +12,7 @@ O Worker é gerado por `npm run build` em `dist/openmakeup/worker.js`.
 As texturas usam ImageBitmap e o shader de remodelagem recebe conversão de cor
 igual à do fundo, evitando uma faixa de cor diferente no rosto.
 
-Chrome/Edge recentes são necessários para este caminho. Se faltarem APIs,
-a interface informa o problema; o filtro não é anunciado como funcionando.
+Chrome/Edge recentes são necessários para este caminho. Se faltarem APIs ou o Worker não iniciar, o filtro tenta o pipeline combinado de compatibilidade. A interface avisa para manter a aba aberta nesse modo, sem garantir continuidade em segundo plano.
 Falhas reais de GPU/Worker são informadas e preservam a chamada sem efeito.
 Desligar a câmera cancela a preparação, encerra o Worker e libera a cópia da
 câmera e a saída gerada. O Worker não envia nem persiste imagens.
@@ -33,3 +32,14 @@ câmera e a saída gerada. O Worker não envia nem persiste imagens.
 
 O teste CDP não representa todos os sistemas operacionais. Suspensão do
 computador, encerramento do navegador ou revogação da câmera interrompem captura.
+
+
+## Preparação opcional (17/10/2026)
+
+“Baixar recursos do filtro” guarda os assets e o modelo facial no cache
+`aula-beauty-resources-v1`, com progresso e retomada por arquivo. Não guarda vídeo.
+“Tentar ativar novamente” aparece após falha. O rastreador tenta CPU caso a
+inicialização de seu delegado GPU falhe; a renderização continua exigindo WebGL.
+Um teste com a API de geração de vídeo removida confirmou a câmera combinada
+recebida pelo aluno. O download guardou 108 recursos. O fluxo com Worker também
+continuou passando o teste de quadros recebidos em segundo plano.

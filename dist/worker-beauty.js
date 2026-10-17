@@ -1,4 +1,4 @@
-window.createWorkerBeauty=async function(input,values,onStatus,onError,cancelled,signal){
+async function startWorkerBeauty(input,values,onStatus,onError,cancelled,signal){
   if(!window.MediaStreamTrackProcessor||!window.MediaStreamTrackGenerator||!window.OffscreenCanvas)
     throw Error('Para manter o filtro em outra aba, use uma versão recente do Chrome ou Edge.');
   const track=input.getVideoTracks()[0].clone();
@@ -24,4 +24,13 @@ window.createWorkerBeauty=async function(input,values,onStatus,onError,cancelled
     await ready;if(cancelled()){stop();return null;}
     return {stream:new MediaStream([output]),stop,setValues(next){worker.postMessage({type:'values',values:next})}};
   }catch(error){stop();throw error;}
+};
+
+window.createWorkerBeauty=async function(input,values,onStatus,onError,cancelled,signal){
+ try{return await startWorkerBeauty(input,values,onStatus,onError,cancelled,signal)}catch(error){
+  if(signal?.aborted||cancelled())throw error;
+  console.warn('Filtro: processamento em segundo plano indisponível:',error.message);
+  onStatus('Preparando filtro no modo compatível…');
+  try{return await window.createCompatibleBeauty(input,()=>values,text=>onStatus(text+' Modo compatível: mantenha a aba da aula aberta.'),onError,cancelled,signal)}catch(fallbackError){throw Error('Não foi possível ativar o filtro. '+fallbackError.message+' Tente baixar os recursos ou usar o Chrome/Edge atualizado.');}
+ }
 };
