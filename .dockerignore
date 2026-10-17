@@ -1,3 +1,6 @@
 *
 !asr_server.py
 !requirements-asr.txt
+!requirements-translation.txt
+!translation_engine.py
+!translation-models.json

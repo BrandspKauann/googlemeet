@@ -6,6 +6,9 @@ por HTTPS. Só o texto reconhecido volta ao navegador, onde continua no fluxo
 de tradução, criptografia e IndexedDB. O áudio não é gravado pelo aplicativo.
 O reconhecimento exige que computador, Docker e túnel permaneçam ligados.
 
+A tradução também é fornecida pelo container. Os participantes não baixam os
+modelos de idiomas; detalhes e créditos em [TRANSLATION-SERVER.md](TRANSLATION-SERVER.md).
+
 O modelo baixa somente no computador que hospeda o Docker. Os participantes
 não baixam modelos. A integração usa o idioma atribuído pela professora,
 inclusive mandarim (`zh`), e não usa o serviço SpeechRecognition do Chrome.

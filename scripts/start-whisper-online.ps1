@@ -1,4 +1,4 @@
-param([ValidateSet('base','small','turbo')][string]$Model='base')
+﻿param([ValidateSet('base','small','turbo')][string]$Model='base')
 $ErrorActionPreference='Stop'
 $projectDir=Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $projectDir
@@ -18,8 +18,8 @@ if($LASTEXITCODE -ne 0){throw 'Não foi possível iniciar o Docker do reconhecim
 $endpoint=$null
 for($attempt=0;$attempt -lt 60;$attempt++){
   $tunnelLog=docker compose --env-file $configPath -f docker/compose.whisper.yml logs --no-color --tail 100 tunnel 2>&1 | Out-String
-  $found=[regex]::Match($tunnelLog,'https://[a-z0-9-]+\.trycloudflare\.com')
-  if($found.Success){$endpoint=$found.Value;break}
+  $found=[regex]::Matches($tunnelLog,'https://[a-z0-9-]+\.trycloudflare\.com')
+  if($found.Count -gt 0){$endpoint=$found[$found.Count-1].Value;break}
   Start-Sleep -Seconds 2
 }
 if(!$endpoint){throw 'O túnel não abriu. Verifique os logs do serviço tunnel.'}

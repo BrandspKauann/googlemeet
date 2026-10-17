@@ -12,6 +12,8 @@ services:
       ASR_MODEL: ${ASR_MODEL:-base}
       ASR_DEVICE: cpu
       ASR_CPU_THREADS: 4
+      ASR_TRANSLATION: 1
+      TRANSLATION_CPU_THREADS: 2
     volumes:
       - whisper-models:/app/data/models
     read_only: true

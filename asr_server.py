@@ -1,4 +1,4 @@
-"""Loopback-only ASR. Audio is processed in memory and is never saved."""
+"""Authenticated classroom ASR and translation. Audio/text are never saved here."""
 import io
 import json
 import os
@@ -19,6 +19,11 @@ PUNCT_LOCK = threading.Lock()
 MODEL = None
 LOCK = threading.Lock()
 CAPACITY = threading.BoundedSemaphore(2)
+TRANSLATION_CAPACITY = threading.BoundedSemaphore(2)
+TRANSLATION = None
+if os.environ.get('ASR_TRANSLATION', '0') == '1':
+    from translation_engine import TranslationEngine
+    TRANSLATION = TranslationEngine()
 
 
 def load_model():
@@ -68,12 +73,42 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.authorized():
+            if self.path == '/translation/health':
+                return self.respond(TRANSLATION.state if TRANSLATION else {
+                    'ready': False, 'error': 'Tradução não configurada.'})
             self.respond(STATE if self.path == '/health' else {'error': 'Rota inválida.'},
                          200 if self.path == '/health' else 404)
 
     def do_POST(self):
         if not self.authorized():
             return
+        if self.path == '/translate':
+            if not TRANSLATION or not TRANSLATION.state['ready']:
+                return self.respond({'error': 'Tradução carregando ou indisponível.'}, 503)
+            if not TRANSLATION_CAPACITY.acquire(blocking=False):
+                return self.respond({'error': 'Tradução ocupada. Aguarde.'}, 429)
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+                if length < 2 or length > 16000:
+                    return self.respond({'error': 'Texto inválido ou muito grande.'}, 400)
+                payload = self.rfile.read(length)
+                if len(payload) != length:
+                    return self.respond({'error': 'Texto incompleto.'}, 400)
+                data = json.loads(payload)
+                if not isinstance(data, dict):
+                    return self.respond({'error': 'Texto inválido.'}, 400)
+                text, source, target = data.get('text'), data.get('source'), data.get('target')
+                started = time.perf_counter()
+                translated = TRANSLATION.translate(text, source, target)
+                return self.respond({'text': translated, 'source': source, 'target': target,
+                                     'model': TRANSLATION.state['model'],
+                                     'processingMs': round((time.perf_counter() - started) * 1000)})
+            except (ValueError, TypeError):
+                return self.respond({'error': 'Texto ou idioma inválido.'}, 400)
+            except Exception:
+                return self.respond({'error': 'Não foi possível traduzir este trecho.'}, 503)
+            finally:
+                TRANSLATION_CAPACITY.release()
         if self.path == '/punctuate':
             if not STATE['punctuationReady']:
                 return self.respond({'error': 'Pontuação local carregando ou indisponível.'}, 503)
@@ -133,6 +168,8 @@ if __name__ == '__main__':
     if not SECRET:
         raise SystemExit('Inicie o motor pelo servidor Aula Global.')
     threading.Thread(target=load_model, daemon=True).start()
+    if TRANSLATION:
+        threading.Thread(target=TRANSLATION.prepare, daemon=True).start()
     if os.environ.get('ASR_PUNCTUATION', '1') == '1':
         threading.Thread(target=load_punctuation, daemon=True).start()
     print('Carregando motor local. Primeiro uso baixa o modelo.', flush=True)

@@ -1,4 +1,5 @@
 import {createASRRelay} from './asr-relay.mjs';
+import {createTranslationRelay} from './translation-relay.mjs';
 import {randomBytes,createHash,scrypt as scryptCallback,timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
 const scrypt=promisify(scryptCallback),id=()=>randomBytes(24).toString('hex'),hash=s=>createHash('sha256').update(s).digest('hex');
@@ -8,14 +9,15 @@ const language=v=>['pt','en','es','zh'].includes(v)?v:'pt';
 const cursor=v=>typeof v==='string'&&/^\d{1,19}$/.test(v)?v:'0';
 const iso=v=>v?new Date(v).toISOString():null;
 async function body(req){if(req.body&&typeof req.body==='object'){if(JSON.stringify(req.body).length>100000)fail(413,'Dados muito grandes.');return req.body}if(typeof req.body==='string'){if(req.body.length>100000)fail(413,'Dados muito grandes.');return JSON.parse(req.body)}let chunks=[],size=0;for await(const c of req){size+=c.length;if(size>100000)fail(413,'Dados muito grandes.');chunks.push(c)}try{return JSON.parse(Buffer.concat(chunks).toString()||'{}')}catch{fail(400,'Dados inválidos.')}}
-export function createCloudHandler(dbProvider,{configured=true,asrRelay=createASRRelay()}={}){
+export function createCloudHandler(dbProvider,{configured=true,asrRelay=createASRRelay(),translationRelay=createTranslationRelay()}={}){
  return async(req,res)=>{
   const send=(value,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value))};
   try{
    const url=new URL(req.url,'http://localhost'),route=url.searchParams.get('route')||url.pathname.replace(/^\/api\/?/,'');
    if(req.method==='POST'&&req.headers.origin&&!['http://'+req.headers.host,'https://'+req.headers.host].includes(req.headers.origin))fail(403,'Origem não autorizada.');
-   if(route==='config'){send({mode:'cloud',encrypted:true,databaseConfigured:typeof configured==='function'?configured():configured,localASR:false,remoteASR:asrRelay.configured()});return}
+   if(route==='config'){send({mode:'cloud',encrypted:true,databaseConfigured:typeof configured==='function'?configured():configured,localASR:false,remoteASR:asrRelay.configured(),remoteTranslation:translationRelay.configured()});return}
    if(route==='asr/health'){send(await asrRelay.health());return}
+   if(route==='translation/health'){if(req.method!=='GET')fail(405,'Método não permitido.');send(await translationRelay.health());return}
    const db=await dbProvider();const query=async(sql,params=[])=> (await db.query(sql,params)).rows;
    const event=(room,type,data={},recipient=null)=>query('INSERT INTO ag_events(room_id,type,data,recipient_id) VALUES($1,$2,$3::jsonb,$4)',[room,type,JSON.stringify(data),recipient]);
    const authUser=async()=>{const token=req.headers.cookie?.match(/(?:^|;\s*)session=([a-f0-9]{48})/)?.[1];if(!token)fail(401,'Entre na conta da professora.');const rows=await query('SELECT u.* FROM ag_users u JOIN ag_sessions s ON s.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now()',[hash(token)]);if(!rows[0])fail(401,'Sua sessão expirou. Entre novamente.');return rows[0]};
@@ -69,6 +71,17 @@ export function createCloudHandler(dbProvider,{configured=true,asrRelay=createAS
     const rate=(await query("INSERT INTO ag_rate_limits(key,window_start,count) VALUES($1,now(),1) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN 1 ELSE ag_rate_limits.count+1 END,window_start=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN now() ELSE ag_rate_limits.window_start END RETURNING count",[hash('asr:'+member.id)]))[0];
     if(rate.count>45)fail(429,'Muitos trechos de voz. Aguarde um momento.');
     send(await asrRelay.transcribe(req,member.language));return;
+   }
+   if(action==='translate'){
+    if(req.method!=='POST')fail(405,'Método não permitido.');accepted();
+    if(!translationRelay.configured())fail(503,'Tradução no servidor não configurada.');
+    const b=await body(req);if(typeof b.text!=='string'||!b.text.trim())fail(400,'Informe um texto para traduzir.');if(b.text.length>2000)fail(413,'Texto muito grande para traduzir.');
+    const assigned=await query("SELECT language,role FROM ag_participants WHERE room_id=$1 AND status='accepted' ORDER BY id",[roomId]);
+    const teacherLanguage=assigned.find(p=>p.role==='teacher')?.language||'pt',studentLanguage=room.student_language||assigned.find(p=>p.role==='student')?.language||'en';
+    if(!['pt','en','es','zh'].includes(b.source)||![teacherLanguage,studentLanguage].includes(b.source))fail(400,'Idioma de origem incompatível com a aula.');
+    const rate=(await query("INSERT INTO ag_rate_limits(key,window_start,count) VALUES($1,now(),1) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN 1 ELSE ag_rate_limits.count+1 END,window_start=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN now() ELSE ag_rate_limits.window_start END RETURNING count",[hash('translate:'+member.id)]))[0];
+    if(rate.count>90)fail(429,'Muitos pedidos de tradução. Aguarde um momento.');
+    send(await translationRelay.translate(b.text,b.source,member.language));return;
    }
    if(req.method!=='POST')fail(405,'Método não permitido.');const b=await body(req);
    if(action==='resume'){await query('UPDATE ag_participants SET generation=generation+1,media=$2::jsonb,online=true WHERE id=$1',[member.id,'{}']);await event(roomId,'members');send(await roomState(roomId,member.id));return}

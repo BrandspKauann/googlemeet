@@ -2,10 +2,43 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs';
-import {webcrypto} from 'node:crypto';
+import {webcrypto,createHash} from 'node:crypto';
 import {PGlite} from '@electric-sql/pglite';
 import {createCloudHandler} from './cloud/handler.mjs';
 import {createASRRelay} from './cloud/asr-relay.mjs';
+import {createTranslationRelay} from './cloud/translation-relay.mjs';
+
+test('cloud translation uses assigned viewer language, authorizes membership and does not persist plaintext',async()=>{
+ const db=new PGlite();await db.exec(fs.readFileSync(new URL('./db/schema.sql',import.meta.url),'utf8'));const calls=[];
+ const translationRelay=createTranslationRelay({getConfig:()=>({enabled:'1',url:'https://voice.example.test',secret:'translation-private-secret'}),fetcher:async(url,options)=>{calls.push({url,options});return Response.json(url.endsWith('/health')?{ready:true,model:'opus-mt',languages:['pt','zh'],secret:'translation-private-secret'}:{text:'你好，老师。',source:'es',target:'en',model:'opus-mt',processingMs:12,secret:'translation-private-secret'})}});
+ const handler=createCloudHandler(()=>db,{translationRelay}),server=http.createServer((q,s)=>handler(q,s));await new Promise(r=>server.listen(0,'127.0.0.1',r));const root='http://127.0.0.1:'+server.address().port;
+ async function json(path,data,headers={}){return fetch(root+'/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...headers},body:data===undefined?undefined:JSON.stringify(data)});}
+ try{
+  const config=await(await json('config')).json();assert.equal(config.remoteTranslation,true);assert.ok(!JSON.stringify(config).includes('secret'));
+  const health=await(await json('translation/health')).json();assert.equal(health.ready,true);assert.ok(!JSON.stringify(health).includes('secret'));assert.equal((await json('translation/health',{})).status,405);calls.length=0;
+  const auth=await json('auth',{mode:'register',name:'Teacher',email:'translation-cloud@example.test',password:'test-password'}),cookie=auth.headers.get('set-cookie').split(';')[0];
+  const room=await(await json('rooms',{title:'Translation test',language:'pt',targetLanguage:'zh'},{Cookie:cookie})).json(),route='rooms/'+room.id;
+  const student=await(await json(route+'/join',{name:'Student',language:'en'})).json(),authStudent={Authorization:'Bearer '+student.token},authTeacher={Authorization:'Bearer '+room.token};
+  const phrase='Frase de aula sem armazenamento.';
+  assert.equal((await json(route+'/translate',{text:phrase,source:'pt'})).status,401);assert.equal((await json(route+'/translate',{text:phrase,source:'pt'},authStudent)).status,403);assert.equal(calls.length,0);
+  const other=await(await json('rooms',{language:'pt'}, {Cookie:cookie})).json();assert.equal((await json(route+'/translate',{text:phrase,source:'pt'},{Authorization:'Bearer '+other.token})).status,401);
+  await json(route+'/admit',{id:student.you.id,accept:true},authTeacher);
+  assert.equal((await json(route+'/translate',undefined,authStudent)).status,405);
+  for(const input of [{text:phrase,source:'en'},{text:phrase,source:'ru'},{text:' ',source:'pt'}])assert.equal((await json(route+'/translate',input,authStudent)).status,400);
+  assert.equal((await json(route+'/translate',{text:'x'.repeat(2001),source:'pt'},authStudent)).status,413);assert.equal(calls.length,0);
+  const result=await json(route+'/translate',{text:phrase,source:'pt',target:'es'},authStudent);assert.equal(result.status,200);assert.deepEqual(await result.json(),{text:'你好，老师。',source:'pt',target:'zh',model:'opus-mt',processingMs:12});
+  assert.deepEqual(JSON.parse(calls[0].options.body),{text:phrase,source:'pt',target:'zh'});assert.equal(calls[0].options.headers.Authorization,'Bearer translation-private-secret');
+  await json(route+'/translate',{text:'你好',source:'zh',target:'en'},authTeacher);assert.deepEqual(JSON.parse(calls[1].options.body),{text:'你好',source:'zh',target:'pt'});
+  await db.query('UPDATE ag_rooms SET ended_at=now() WHERE id=$1',[room.id]);assert.equal((await json(route+'/translate',{text:phrase,source:'pt'},authStudent)).status,200);
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM ag_transcripts')).rows[0].total,0);assert.ok(!JSON.stringify((await db.query('SELECT data FROM ag_events')).rows).includes(phrase));
+  // The student's valid translations are counted separately from the teacher's request.
+  await db.query('UPDATE ag_rate_limits SET count=90 WHERE key=$1',[createHash('sha256').update('translate:'+student.you.id).digest('hex')]);
+  const count=calls.length;assert.equal((await json(route+'/translate',{text:phrase,source:'pt'},authStudent)).status,429);assert.equal(calls.length,count);
+  const offlineHandler=createCloudHandler(()=>db,{translationRelay:createTranslationRelay({getConfig:()=>({enabled:'1',url:'https://voice.example.test',secret:'private'}),fetcher:async()=>{throw Error('private')}})});
+  const offline=http.createServer((q,s)=>offlineHandler(q,s));await new Promise(r=>offline.listen(0,'127.0.0.1',r));
+  try{const response=await fetch('http://127.0.0.1:'+offline.address().port+'/api/'+route+'/translate',{method:'POST',headers:{'Content-Type':'application/json',...authTeacher},body:JSON.stringify({text:'你好',source:'zh'})});assert.equal(response.status,503);assert.ok(!(await response.text()).includes('private'));}finally{await new Promise(r=>offline.close(r));}
+ }finally{await new Promise(r=>server.close(r));await db.close();}
+});
 
 test('cloud Whisper requires approved room membership, uses assigned language and never stores audio',async()=>{
  const db=new PGlite();await db.exec(fs.readFileSync(new URL('./db/schema.sql',import.meta.url),'utf8'));

@@ -5,7 +5,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 COPY requirements-asr.txt .
 RUN pip install --no-cache-dir -r requirements-asr.txt && useradd --uid 10001 --create-home whisper && mkdir -p /app/data/models && chown -R whisper:whisper /app/data
-COPY asr_server.py .
+COPY requirements-translation.txt .
+RUN pip install --no-cache-dir -r requirements-translation.txt
+COPY asr_server.py translation_engine.py translation-models.json ./
 USER whisper
 EXPOSE 4180
 CMD ["python", "asr_server.py"]

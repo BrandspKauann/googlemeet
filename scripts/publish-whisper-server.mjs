@@ -12,9 +12,12 @@ if(fs.existsSync(cache))for(const entry of fs.readdirSync(cache))candidates.push
 const cli=candidates.find(file=>fs.existsSync(file));if(!cli)throw Error('Instale a CLI Vercel ou defina VERCEL_CLI com o caminho do arquivo index.js da CLI.');
 const response=await fetch(endpoint+'/health',{headers:{Authorization:'Bearer '+secret},signal:AbortSignal.timeout(15000)});
 if(!response.ok||(await response.json()).ready!==true)throw Error('O Whisper precisa estar pronto no endereço público antes de conectar o site.');
+const translationResponse=await fetch(endpoint+'/translation/health',{headers:{Authorization:'Bearer '+secret},signal:AbortSignal.timeout(15000)});
+if(!translationResponse.ok||(await translationResponse.json()).ready!==true)throw Error('A tradução precisa estar pronta no endereço público antes de conectar o site.');
 async function command(args,input){await new Promise((resolve,reject)=>{const processCLI=spawn(process.execPath,[cli,...args],{cwd:root,windowsHide:true,stdio:['pipe','pipe','pipe']});processCLI.stdout.resume();processCLI.stderr.resume();processCLI.on('error',reject);processCLI.on('close',code=>code===0?resolve():reject(Error('A CLI Vercel não concluiu a operação. Confira o login e o projeto.')));processCLI.stdin.end(input||'');});}
 await command(['env','add','ASR_URL','production','--force','--yes','--no-sensitive'],endpoint+'\n');
 await command(['env','add','ASR_SECRET','production','--force','--yes','--sensitive'],secret+'\n');
+await command(['env','add','TRANSLATION_SERVER_ENABLED','production','--force','--yes','--no-sensitive'],'1\n');
 console.log('Servidor verificado e configuração privada atualizada. Publicando o site…');
 await command(['deploy','--prod','--yes']);
 console.log('Publicado: https://googlemeet-two.vercel.app/');
