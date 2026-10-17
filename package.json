@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test server.test.mjs local-asr.test.mjs cloud.test.mjs durable-security.test.mjs educational-quotes.test.mjs browser-asr.test.mjs paraformer-asr.test.mjs language-routing.test.mjs worker-beauty.test.mjs",
+    "test": "node --test server.test.mjs local-asr.test.mjs cloud.test.mjs durable-security.test.mjs educational-quotes.test.mjs browser-asr.test.mjs paraformer-asr.test.mjs language-routing.test.mjs worker-beauty.test.mjs microphone.test.mjs",
     "dev:cloud": "node dev-cloud.mjs",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate-db.mjs",
     "build": "node scripts/build-browser-asr.mjs && node scripts/build-beauty.mjs",

@@ -85,13 +85,36 @@ async function sendRecord(b,key){if(sending.has(key))return;sending.add(key);try
 async function postText(text,kind='speech'){if(!text.trim()||state?.ended)return;const rawText=text;if(kind==='speech')text=window.educationalQuotes?.format(text,state.you.language)||text;const key=crypto.randomUUID();let b={text,rawText,kind,clientId:key,capturedAt:new Date().toISOString(),punctuation:window.localASR?.punctuationEnabled()!==false};if(kind==='speech'&&b.punctuation)window.captionUI?.phase('Pontuando a fala…');try{b=await window.roomSecurity.encode(b)}catch(error){$('mediaStatus').textContent='Não foi possível proteger a fala: '+error.message;return}pendingWrites.set(key,b);addRecord({id:'pending:'+key,clientId:key,memberId:state.you.id,name:state.you.name,language:state.you.language,at:b.capturedAt,text,rawText,kind,pending:true});try{await window.durableQueue.put({id:queueId(key),clientId:key,roomId,memberId:state.you.id,body:b})}catch{$('mediaStatus').textContent='Fila persistente indisponível: mantenha esta aba aberta até salvar.'}updateSyncStatus();return sendRecord(b,key)}
 const speechGrouper=window.asrUtils.createGrouper(text=>postText(text));
 function recognizedText(text){return speechGrouper.push(text,state.you.id+':'+state.you.language)}
+async function startRecognition(stream){
+ if(!stream||stream!==audioStream||finished||closing)return;
+ const engine=window.localASR?.engine();
+ try{
+  if(engine==='paraformer'&&!['zh','en'].includes(state.you.language))throw Error('Paraformer reconhece mandarim e inglês. Escolha outro motor com o microfone desligado.');
+  if((engine==='paraformer'&&!window.paraformerASR?.ready())||(engine==='device'&&!window.deviceASR?.ready()))throw Error('Clique em Preparar reconhecimento para ativar as legendas.');
+  window.localASR?.setActive(true);
+  const result=await window.speechEngine.start(stream,{language:state.you.language,status:t=>$('mediaStatus').textContent=t,text:t=>recognizedText(t),gap:t=>postText(t,'gap'),phase:t=>window.captionUI?.phase(t),transcribe:async audio=>{const res=await fetch(`/api/rooms/${roomId}/asr`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'audio/wav'},body:audio});const data=await res.json();if(!res.ok)throw Error(data.error||'Falha no motor local.');return data;}});
+  if(stream!==audioStream)return;
+  if(!result?.unavailable)$('mediaStatus').textContent=engine==='browser'?'Microfone ligado. Reconhecimento do navegador selecionado.':engine==='paraformer'?'Microfone ligado com Paraformer. Áudio processado neste dispositivo.':'Microfone ligado com Whisper. Áudio temporário, sem gravação.';
+ }catch(error){
+  window.speechEngine?.abort();if(stream!==audioStream)return;
+  window.localASR?.setActive(true,true);
+  $('mediaStatus').textContent='Microfone ligado, sem transcrição. '+error.message;
+  window.captionUI?.openPanel?.();const settings=document.querySelector('.recognition-settings');if(settings)settings.open=true;
+  postText('Transcrição indisponível neste intervalo: '+error.message,'gap').catch(()=>{});
+ }
+}
+window.addEventListener('aula-recognition-ready',()=>{if(audioStream)startRecognition(audioStream)});
 async function startMic(){
  if(state.you.status!=='accepted')return;
- if(window.localASR?.engine()==='paraformer'&&!['zh','en'].includes(state.you.language))throw Error('Paraformer reconhece mandarim e inglês. Para português ou espanhol, escolha outro motor.');const useLocal=window.localASR?.selected();if(window.localASR?.engine()==='paraformer'&&!window.paraformerASR?.ready())throw Error('Clique em Preparar reconhecimento antes de ligar o microfone.');if(window.localASR?.engine()==='device'&&!window.deviceASR?.ready())throw Error('Clique em Preparar reconhecimento antes de ligar o microfone.');window.localASR?.setActive(true);
- try{audioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});await updateTracks();window.meetingUI.controlLabel('mic','Desligar microfone');$('mic').setAttribute('aria-pressed','true');$('mic').classList.add('selected');
- const recognitionStarted=await window.speechEngine.start(audioStream,{language:state.you.language,status:t=>$('mediaStatus').textContent=t,text:t=>recognizedText(t),gap:t=>postText(t,'gap'),phase:t=>window.captionUI?.phase(t),transcribe:async audio=>{const res=await fetch(`/api/rooms/${roomId}/asr`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'audio/wav'},body:audio});const result=await res.json();if(!res.ok)throw new Error(result.error||'Falha no motor local.');return result;}});
- if(!recognitionStarted?.unavailable)$('mediaStatus').textContent=useLocal?(window.localASR.engine()==='paraformer'?'Microfone ligado com Paraformer. Áudio processado neste dispositivo.':'Microfone ligado com Whisper. Áudio temporário, sem gravação.'):'Microfone ligado. Reconhecimento do navegador selecionado.';
- }catch(e){window.speechEngine?.abort();window.localASR?.setActive(false);if(audioStream){audioStream.getTracks().forEach(t=>t.stop());audioStream=null;await updateTracks().catch(()=>{})}window.meetingUI.controlLabel('mic','Ligar microfone');$('mic').setAttribute('aria-pressed','false');$('mic').classList.remove('selected');throw new Error(mediaError(e))}
+ try{
+  audioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
+  window.localASR?.setActive(true);await updateTracks();
+  window.meetingUI.controlLabel('mic','Desligar microfone');$('mic').setAttribute('aria-pressed','true');$('mic').classList.add('selected');
+ }catch(error){
+  window.localASR?.setActive(false);audioStream?.getTracks().forEach(t=>t.stop());audioStream=null;await updateTracks().catch(()=>{});
+  $('mediaStatus').textContent='Não foi possível ligar o microfone. '+mediaError(error);throw Error(mediaError(error));
+ }
+ await startRecognition(audioStream);
 }
 async function stopMic(){
  const heartbeat=state?.incremental&&state.ending?setInterval(()=>api('state').catch(()=>{}),10000):null;
