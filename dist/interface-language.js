@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Tradução automática':'自动翻译','Fala original':'原文','Microfone ligado. Legendas automáticas ativas.':'麦克风已开启，自动字幕已启用。','Legendas e tradução':'字幕与翻译','Ligue o microfone para falar. A tradução aparece nas legendas.':'打开麦克风即可发言，译文将显示在字幕中。','Privacidade da aula':'课堂隐私',
     'Tradução no servidor ativa. Nenhum modelo é baixado neste dispositivo.':'服务器翻译已启用，此设备无需下载模型。',
     'O texto é enviado por conexão protegida ao servidor de tradução e processado temporariamente. A transcrição continua criptografada ao ser salva. Tela e áudio não são gravados.':'文字通过安全连接发送至翻译服务器，仅临时处理。文字记录保存时仍会加密，不录制屏幕或音频。',
     'Retomando traduções…':'正在重试翻译…','Tradução indisponível · original preservado':'翻译暂不可用 · 原文已保留',
@@ -70,7 +71,7 @@
   let language='pt';try{language=localStorage.getItem('aulaInterfaceLanguage')==='zh'?'zh':'pt';}catch{}
   const originals=new WeakMap(),attributes=new WeakMap();
   // Classroom content and participant identities are never interface strings.
-  const protectedContent='script,style,svg,textarea,#transcript,#caption[data-user-content],#studentCaption[data-user-content],#original,#studentOriginal,#captionSpeaker,#studentCaptionSpeaker,#selfName,#selfLabel,#selfInitial,#meetingTitle,#joinTitle,#sessionTitle[data-user-content],.tilelabel,.bubble-name,.bubble-avatar,.avatar,#interfaceLanguage';
+  const protectedContent='script,style,svg,textarea,#transcript,#caption[data-user-content],#studentCaption[data-user-content],#original,#studentOriginal,#captionSpeaker,#studentCaptionSpeaker,#selfName,#selfLabel,#selfInitial,#meetingTitle,#joinTitle,#sessionTitle[data-user-content],.tilelabel,.bubble-name,.bubble-avatar,.avatar,#interfaceLanguage,#meetingInterfaceLanguage';
   function translate(text){
     if(dictionary[text])return dictionary[text];
     const profile=text.match(/^Reconhecimento: (.+) → (.+)\. Tradução configurada separadamente\.$/);if(profile)return '语音识别：'+({Mandarim:'中文',Português:'葡萄牙语',Inglês:'英语',Espanhol:'西班牙语'}[profile[1]]||profile[1])+' → '+({Navegador:'浏览器','Whisper no dispositivo':'设备端 Whisper','Whisper local':'本地 Whisper'}[profile[2]]||profile[2])+'。翻译单独配置。';
@@ -100,10 +101,11 @@
   }
   const titleInput=document.getElementById('roomTitle');let customTitle=false;titleInput.addEventListener('input',()=>{customTitle=true;});
   const button=document.createElement('button');button.type='button';button.id='interfaceLanguage';document.querySelector('.app-header').append(button);
+  const meetingButton=document.createElement('button');meetingButton.type='button';meetingButton.id='meetingInterfaceLanguage';document.querySelector('.room-actions').prepend(meetingButton);
   const observer=new MutationObserver(records=>{observer.disconnect();for(const record of records){if(record.type==='characterData')updateText(record.target);else if(record.type==='attributes')updateAttributes(record.target);else for(const node of record.addedNodes)walk(node);}observe();});
   function walk(root){if(root.nodeType===3){updateText(root);return;}if(root.nodeType!==1&&root.nodeType!==9)return;if(root.nodeType===1){if(root.closest(protectedContent))return;updateAttributes(root);}const walker=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;if(node.nodeType===3)updateText(node);else if(!node.closest(protectedContent))updateAttributes(node);}}
   function observe(){observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','aria-label','title']});}
-  function apply(){observer.disconnect();document.documentElement.lang=language==='zh'?'zh-CN':'pt-BR';if(!customTitle&&['Minha aula','我的课堂'].includes(titleInput.value))titleInput.value=language==='zh'?'我的课堂':'Minha aula';walk(document.documentElement);button.textContent=language==='zh'?'Português':'中文';button.setAttribute('aria-label',language==='zh'?'切换到葡萄牙语':'Mudar interface para chinês simplificado');button.title=language==='zh'?'Português':'中文（简体）';observe();}
-  button.onclick=()=>{language=language==='zh'?'pt':'zh';try{localStorage.setItem('aulaInterfaceLanguage',language);}catch{}apply();};
+  function apply(){observer.disconnect();document.documentElement.lang=language==='zh'?'zh-CN':'pt-BR';if(!customTitle&&['Minha aula','我的课堂'].includes(titleInput.value))titleInput.value=language==='zh'?'我的课堂':'Minha aula';walk(document.documentElement);for(const control of [button,meetingButton]){control.textContent=language==='zh'?'Português':'中文';control.setAttribute('aria-label',language==='zh'?'切换到葡萄牙语':'Mudar interface para chinês simplificado');control.title=language==='zh'?'Português':'中文（简体）';}observe();}
+  meetingButton.onclick=button.onclick=()=>{language=language==='zh'?'pt':'zh';try{localStorage.setItem('aulaInterfaceLanguage',language);}catch{}apply();};
   window.interfaceLanguage={get:()=>language};apply();
 })();

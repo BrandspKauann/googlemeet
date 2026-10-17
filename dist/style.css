@@ -57,3 +57,11 @@ body.in-meeting>.app-header{display:none}body.in-meeting #meeting{height:100dvh}
 
 #shareAudioStatus{margin:0;padding:7px 12px;background:#e8f0fe;color:#174ea6;font-size:12px}#shareAudioStatus:empty{display:none}.screen-audio-retry{background:#e8f0fe;color:#174ea6;border-color:#a8c7fa;border-radius:18px}
 .screen-actions{max-width:100%;flex-wrap:wrap}.screenhead:has(.screen-audio-retry:not([hidden])){flex-wrap:wrap}
+
+/* Server recognition starts with the microphone; hide obsolete preparation controls. */
+body.server-recognition .recognition-settings{display:none!important}
+#translationStatus{border-radius:10px;padding:10px 12px;background:#e8f0fe;color:#174ea6;font-size:12px;line-height:1.4}
+.livebox .translation-hint{margin:6px 0 12px;color:#5f6368;line-height:1.5}
+.livebox .translation-privacy{margin-top:14px;padding-top:10px}.translation-privacy summary{font-size:11px}
+#meetingInterfaceLanguage{flex-shrink:0;color:#174ea6;border-color:#c4d7f7;white-space:nowrap}
+@media(max-width:650px){.roomhead{flex-wrap:wrap;gap:6px}.room-actions{margin-left:0;flex-wrap:wrap;justify-content:flex-end;flex:1 1 100%;gap:6px}.room-actions button{white-space:nowrap}#meetingInterfaceLanguage{padding:7px 10px;min-height:34px}}
