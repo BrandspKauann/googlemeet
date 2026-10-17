@@ -15,3 +15,8 @@ dev-cloud.mjs
 benchmarks
 dist/asr-compare.html
 dist/asr-compare.js
+
+# Temporarily retired Mandarin model and runtime
+dist/paraformer-runtime/
+dist/paraformer-worker.js
+dist/paraformer-asr.js
