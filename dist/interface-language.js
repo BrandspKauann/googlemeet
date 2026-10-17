@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Câmera pausada':'摄像头画面已暂停','Borrar fundo':'背景虚化','Fundo borrado':'背景已虚化','Borrar somente o fundo da sua câmera':'仅虚化您的摄像头背景','Desfoque disponível no Chrome e Edge atualizados.':'背景虚化需要最新版 Chrome 或 Edge。','Desfoque selecionado. Ligue a câmera para aplicar.':'已选择背景虚化，打开摄像头后生效。','Preparando desfoque… A câmera fica pausada até o efeito estar pronto.':'正在准备背景虚化，效果就绪前摄像头画面暂停。','Fundo borrado. O efeito também aparece para a outra pessoa.':'背景已虚化，对方也会看到此效果。','Não foi possível borrar o fundo. Desative o efeito e tente novamente.':'无法虚化背景，请关闭效果后重试。','Desfoque indisponível. Desative o fundo borrado para retomar a câmera.':'背景虚化暂不可用，请关闭虚化以恢复摄像头。',
     'Original e tradução':'原文与译文',
     'Tradução automática':'自动翻译','Fala original':'原文','Microfone ligado. Legendas automáticas ativas.':'麦克风已开启，自动字幕已启用。','Legendas e tradução':'字幕与翻译','Ligue o microfone para falar. A tradução aparece nas legendas.':'打开麦克风即可发言，译文将显示在字幕中。','Privacidade da aula':'课堂隐私',
     'Tradução no servidor ativa. Nenhum modelo é baixado neste dispositivo.':'服务器翻译已启用，此设备无需下载模型。',

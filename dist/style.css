@@ -71,3 +71,5 @@ body.server-recognition .recognition-settings{display:none!important}
 .caption .bubble-original{font-size:calc(var(--caption-font)*.8);line-height:1.45;max-height:40%;color:#3c4043;padding-top:9px;margin-top:9px;border-top:1px solid #edf0f3;white-space:pre-wrap}
 .caption .bubble-status{margin-top:auto;padding-top:8px}
 @media(max-width:650px){.caption .bubble-original{font-size:12px}.caption .bubble-text::before,.caption .bubble-original::before{font-size:9px}}
+
+#backgroundBlurStatus{font-size:11px;color:#5f6368;margin:0;line-height:1.4}#backgroundBlurStatus:empty{display:none}#backgroundBlur[aria-pressed=true]{background:#d3e3fd;color:#174ea6;border-color:#adc8f6}
