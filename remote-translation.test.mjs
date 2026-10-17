@@ -10,7 +10,7 @@ function setup(remote=true){
   let unavailable=false,downloads=0;
   const window={captionUI:{set(...args){captions.push(args)}},languageRouting:{translation:()=>({provider:'browser',pivot:'en'})}};
   Object.defineProperty(window,'Translator',{get(){downloads++;throw new Error('Browser translation must not be accessed')}});
-  const context={window,profile:{remoteTranslation:remote},viewLang:'pt',names:{zh:'中文 — Mandarim',pt:'Português'},translators:new Map(),records:new Map(),translationLanes:new Map(),translationQueue:Promise.resolve(),$:element,
+  const context={window,state:{teacherLanguage:'zh',studentLanguage:'pt'},profile:{remoteTranslation:remote},viewLang:'pt',names:{zh:'中文 — Mandarim',pt:'Português'},translators:new Map(),records:new Map(),translationLanes:new Map(),translationQueue:Promise.resolve(),$:element,
     recordRole:record=>record.data.role,latestRecord:role=>[...context.records.values()].filter(record=>record.data.role===role).at(-1),
     api:async(action,body)=>{requests.push({action,body});if(unavailable)throw new Error('Servidor de tradução indisponível.');return {text:'Olá. Quantas letras tem a palavra “carro”?' };}};
   vm.createContext(context);
@@ -58,4 +58,14 @@ test('empty server response is rejected without replacing original text',async()
   await s.context.queueTranslation(r);
   assert.equal(r.translations.pt,undefined);assert.equal(s.captions.at(-1)[1],r.data.text);
   assert.match(s.element('translationStatus').textContent,/não retornou a tradução/);
+});
+
+
+test('speaker sees their original first and the other assigned language underneath',async()=>{
+ const s=setup();s.context.viewLang='zh';const r=record();s.context.records.set(r.data.id,r);await s.context.queueTranslation(r);
+ const shown=s.captions.at(-1);assert.equal(shown[1],r.data.text);assert.equal(shown[2],r.translations.pt);assert.equal(shown[6].primary,'zh');assert.equal(shown[6].secondary,'pt');assert.equal(s.requests[0].body.target,'pt');
+});
+test('listener sees translation first and unchanged source underneath',async()=>{
+ const s=setup();const r=record();s.context.records.set(r.data.id,r);await s.context.queueTranslation(r);
+ const shown=s.captions.at(-1);assert.equal(shown[1],r.translations.pt);assert.equal(shown[2],r.data.text);assert.equal(shown[6].primary,'pt');assert.equal(shown[6].secondary,'zh');
 });

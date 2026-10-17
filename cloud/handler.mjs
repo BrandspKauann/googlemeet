@@ -81,7 +81,8 @@ export function createCloudHandler(dbProvider,{configured=true,asrRelay=createAS
     if(!['pt','en','es','zh'].includes(b.source)||![teacherLanguage,studentLanguage].includes(b.source))fail(400,'Idioma de origem incompatível com a aula.');
     const rate=(await query("INSERT INTO ag_rate_limits(key,window_start,count) VALUES($1,now(),1) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN 1 ELSE ag_rate_limits.count+1 END,window_start=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN now() ELSE ag_rate_limits.window_start END RETURNING count",[hash('translate:'+member.id)]))[0];
     if(rate.count>90)fail(429,'Muitos pedidos de tradução. Aguarde um momento.');
-    send(await translationRelay.translate(b.text,b.source,member.language));return;
+    const target=b.source===member.language?([teacherLanguage,studentLanguage].find(value=>value!==b.source)||member.language):member.language;
+     send(await translationRelay.translate(b.text,b.source,target));return;
    }
    if(req.method!=='POST')fail(405,'Método não permitido.');const b=await body(req);
    if(action==='resume'){await query('UPDATE ag_participants SET generation=generation+1,media=$2::jsonb,online=true WHERE id=$1',[member.id,'{}']);await event(roomId,'members');send(await roomState(roomId,member.id));return}

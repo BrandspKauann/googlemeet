@@ -7,7 +7,9 @@ A câmera, o filtro de beleza e o compartilhamento de tela continuam no disposit
 ## Fluxo e privacidade
 
 1. O navegador recebe a fala reconhecida e solicita a tradução pela API da sala.
-2. A Vercel verifica a participação aprovada e impõe o idioma de destino do participante.
+2. A Vercel verifica a participação aprovada e restringe a tradução aos idiomas da aula.
+   A própria fala é traduzida para o outro idioma; a fala recebida, para o idioma
+   do participante. Original e tradução aparecem nos dois lados.
 3. O texto segue por HTTPS ao mesmo servidor autenticado usado pelo Whisper.
 4. O resultado aparece no navegador. A rota de tradução não grava texto ou áudio.
 

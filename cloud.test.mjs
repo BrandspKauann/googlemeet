@@ -29,6 +29,8 @@ test('cloud translation uses assigned viewer language, authorizes membership and
   const result=await json(route+'/translate',{text:phrase,source:'pt',target:'es'},authStudent);assert.equal(result.status,200);assert.deepEqual(await result.json(),{text:'你好，老师。',source:'pt',target:'zh',model:'opus-mt',processingMs:12});
   assert.deepEqual(JSON.parse(calls[0].options.body),{text:phrase,source:'pt',target:'zh'});assert.equal(calls[0].options.headers.Authorization,'Bearer translation-private-secret');
   await json(route+'/translate',{text:'你好',source:'zh',target:'en'},authTeacher);assert.deepEqual(JSON.parse(calls[1].options.body),{text:'你好',source:'zh',target:'pt'});
+  await json(route+'/translate',{text:phrase,source:'pt',target:'es'},authTeacher);assert.deepEqual(JSON.parse(calls[2].options.body),{text:phrase,source:'pt',target:'zh'});
+  await json(route+'/translate',{text:'你好',source:'zh',target:'es'},authStudent);assert.deepEqual(JSON.parse(calls[3].options.body),{text:'你好',source:'zh',target:'pt'});
   await db.query('UPDATE ag_rooms SET ended_at=now() WHERE id=$1',[room.id]);assert.equal((await json(route+'/translate',{text:phrase,source:'pt'},authStudent)).status,200);
   assert.equal((await db.query('SELECT count(*)::int AS total FROM ag_transcripts')).rows[0].total,0);assert.ok(!JSON.stringify((await db.query('SELECT data FROM ag_events')).rows).includes(phrase));
   // The student's valid translations are counted separately from the teacher's request.

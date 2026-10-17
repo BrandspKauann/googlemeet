@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Original e tradução':'原文与译文',
     'Tradução automática':'自动翻译','Fala original':'原文','Microfone ligado. Legendas automáticas ativas.':'麦克风已开启，自动字幕已启用。','Legendas e tradução':'字幕与翻译','Ligue o microfone para falar. A tradução aparece nas legendas.':'打开麦克风即可发言，译文将显示在字幕中。','Privacidade da aula':'课堂隐私',
     'Tradução no servidor ativa. Nenhum modelo é baixado neste dispositivo.':'服务器翻译已启用，此设备无需下载模型。',
     'O texto é enviado por conexão protegida ao servidor de tradução e processado temporariamente. A transcrição continua criptografada ao ser salva. Tela e áudio não são gravados.':'文字通过安全连接发送至翻译服务器，仅临时处理。文字记录保存时仍会加密，不录制屏幕或音频。',
