@@ -20,3 +20,8 @@ dist/asr-compare.js
 dist/paraformer-runtime/
 dist/paraformer-worker.js
 dist/paraformer-asr.js
+
+.dockerignore
+docker/
+scripts/start-whisper-online.ps1
+scripts/publish-whisper-server.mjs

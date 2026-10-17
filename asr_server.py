@@ -27,7 +27,7 @@ def load_model():
         from faster_whisper import WhisperModel
         MODEL = WhisperModel(MODEL_NAME, device=DEVICE,
                              compute_type='int8' if DEVICE == 'cpu' else 'int8_float16',
-                             cpu_threads=4, num_workers=1,
+                             cpu_threads=int(os.environ.get('ASR_CPU_THREADS', '4')), num_workers=1,
                              download_root=str(ROOT / 'data' / 'models'))
         STATE['ready'] = True
         print('Motor local pronto: ' + MODEL_NAME + ' / ' + DEVICE, flush=True)
@@ -133,6 +133,7 @@ if __name__ == '__main__':
     if not SECRET:
         raise SystemExit('Inicie o motor pelo servidor Aula Global.')
     threading.Thread(target=load_model, daemon=True).start()
-    threading.Thread(target=load_punctuation, daemon=True).start()
+    if os.environ.get('ASR_PUNCTUATION', '1') == '1':
+        threading.Thread(target=load_punctuation, daemon=True).start()
     print('Carregando motor local. Primeiro uso baixa o modelo.', flush=True)
-    ThreadingHTTPServer(('127.0.0.1', int(os.environ.get('ASR_PORT', '4180'))), Handler).serve_forever()
+    ThreadingHTTPServer((os.environ.get('ASR_HOST', '127.0.0.1'), int(os.environ.get('ASR_PORT', '4180'))), Handler).serve_forever()

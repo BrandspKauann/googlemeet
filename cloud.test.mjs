@@ -5,6 +5,26 @@ import fs from 'node:fs';
 import {webcrypto} from 'node:crypto';
 import {PGlite} from '@electric-sql/pglite';
 import {createCloudHandler} from './cloud/handler.mjs';
+import {createASRRelay} from './cloud/asr-relay.mjs';
+
+test('cloud Whisper requires approved room membership, uses assigned language and never stores audio',async()=>{
+ const db=new PGlite();await db.exec(fs.readFileSync(new URL('./db/schema.sql',import.meta.url),'utf8'));
+ const calls=[];const asrRelay=createASRRelay({getConfig:()=>({url:'https://voice.example.test',secret:'server-private-secret'}),fetcher:async(url,options)=>{calls.push({url,options});return Response.json({text:'你好',model:'base',processingMs:10})}});
+ const handler=createCloudHandler(()=>db,{asrRelay}),server=http.createServer((q,s)=>handler(q,s));await new Promise(r=>server.listen(0,'127.0.0.1',r));const root='http://127.0.0.1:'+server.address().port;
+ async function json(path,data,headers={}){return fetch(root+'/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...headers},body:data===undefined?undefined:JSON.stringify(data)});}
+ try{
+  const config=await(await json('config')).json();assert.equal(config.remoteASR,true);assert.ok(!JSON.stringify(config).includes('secret'));
+  const auth=await json('auth',{mode:'register',name:'Teacher',email:'whisper-cloud@example.test',password:'test-password'}),cookie=auth.headers.get('set-cookie').split(';')[0];
+  const room=await(await json('rooms',{title:'Voice test',language:'pt',targetLanguage:'zh'},{Cookie:cookie})).json(),route='rooms/'+room.id;
+  const student=await(await json(route+'/join',{name:'Student',language:'en'})).json();
+  const wav=Buffer.alloc(32044);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(16000,24);wav.writeUInt32LE(32000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(32000,40);
+  const speech=token=>fetch(root+'/api/'+route+'/asr',{method:'POST',headers:{'Content-Type':'audio/wav',...(token?{Authorization:'Bearer '+token}:{})},body:wav});
+  assert.equal((await speech()).status,401);assert.equal((await speech(student.token)).status,403);assert.equal(calls.length,0);
+  await json(route+'/admit',{id:student.you.id,accept:true},{Authorization:'Bearer '+room.token});const result=await speech(student.token);assert.equal(result.status,200);assert.equal((await result.json()).text,'你好');
+  assert.equal(calls.length,1);assert.equal(calls[0].options.headers['X-Language'],'zh');assert.equal(calls[0].options.headers.Authorization,'Bearer server-private-secret');assert.equal((await db.query('SELECT count(*)::int AS total FROM ag_transcripts')).rows[0].total,0);
+  await db.query('UPDATE ag_rooms SET ended_at=now() WHERE id=$1',[room.id]);assert.equal((await speech(room.token)).status,409);assert.equal(calls.length,1);
+ }finally{await new Promise(r=>server.close(r));await db.close();}
+});
 
 test('PostgreSQL cloud API isolates rooms, persists sessions, pages encrypted speech and deduplicates retries',async()=>{
  const db=new PGlite();await db.exec(fs.readFileSync(new URL('./db/schema.sql',import.meta.url),'utf8'));let handler=createCloudHandler(()=>db);const app=http.createServer((q,s)=>handler(q,s));await new Promise(r=>app.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+app.address().port;

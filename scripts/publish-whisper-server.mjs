@@ -1,0 +1,20 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawn} from 'node:child_process';
+const root=path.resolve(import.meta.dirname,'..');
+const read=(file,key)=>{const text=fs.readFileSync(path.join(root,file),'utf8');const found=text.match(new RegExp('^'+key+'=(.+)$','m'));if(!found)throw Error('Configuração ausente: '+key);return found[1].trim()};
+const endpoint=read('.env.whisper.endpoint.local','ASR_URL'),secret=read('.env.whisper.local','ASR_SECRET');
+const url=new URL(endpoint);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash)throw Error('Use um endereço HTTPS válido para o servidor.');
+const project=JSON.parse(fs.readFileSync(path.join(root,'.vercel/project.json'),'utf8'));if(project.projectName!=='googlemeet')throw Error('Este script deve ser usado no projeto Vercel googlemeet.');
+const candidates=[process.env.VERCEL_CLI,path.join(root,'node_modules/vercel/dist/index.js')].filter(Boolean);
+const cache=path.join(process.env.LOCALAPPDATA||'', 'npm-cache','_npx');
+if(fs.existsSync(cache))for(const entry of fs.readdirSync(cache))candidates.push(path.join(cache,entry,'node_modules/vercel/dist/index.js'));
+const cli=candidates.find(file=>fs.existsSync(file));if(!cli)throw Error('Instale a CLI Vercel ou defina VERCEL_CLI com o caminho do arquivo index.js da CLI.');
+const response=await fetch(endpoint+'/health',{headers:{Authorization:'Bearer '+secret},signal:AbortSignal.timeout(15000)});
+if(!response.ok||(await response.json()).ready!==true)throw Error('O Whisper precisa estar pronto no endereço público antes de conectar o site.');
+async function command(args,input){await new Promise((resolve,reject)=>{const processCLI=spawn(process.execPath,[cli,...args],{cwd:root,windowsHide:true,stdio:['pipe','pipe','pipe']});processCLI.stdout.resume();processCLI.stderr.resume();processCLI.on('error',reject);processCLI.on('close',code=>code===0?resolve():reject(Error('A CLI Vercel não concluiu a operação. Confira o login e o projeto.')));processCLI.stdin.end(input||'');});}
+await command(['env','add','ASR_URL','production','--force','--yes','--no-sensitive'],endpoint+'\n');
+await command(['env','add','ASR_SECRET','production','--force','--yes','--sensitive'],secret+'\n');
+console.log('Servidor verificado e configuração privada atualizada. Publicando o site…');
+await command(['deploy','--prod','--yes']);
+console.log('Publicado: https://googlemeet-two.vercel.app/');

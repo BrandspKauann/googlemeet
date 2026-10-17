@@ -1,0 +1,47 @@
+name: aula-global-voice
+services:
+  asr:
+    build:
+      context: ..
+      dockerfile: docker/Whisper.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4180:4180"
+    environment:
+      ASR_SECRET: ${ASR_SECRET:?Defina ASR_SECRET no arquivo local}
+      ASR_MODEL: ${ASR_MODEL:-base}
+      ASR_DEVICE: cpu
+      ASR_CPU_THREADS: 4
+    volumes:
+      - whisper-models:/app/data/models
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m
+    mem_limit: 4g
+    cpus: 4
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json,os,urllib.request; r=urllib.request.Request('http://127.0.0.1:4180/health',headers={'Authorization':'Bearer '+os.environ['ASR_SECRET']}); assert json.load(urllib.request.urlopen(r,timeout=3))['ready']"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+  tunnel:
+    image: cloudflare/cloudflared@sha256:a15a3b50b8dabd57ac2090e9484c0247dba9dfa1f0df4d298d4317f9d69eb2d5
+    restart: unless-stopped
+    profiles: [quick]
+    command: tunnel --no-autoupdate --protocol http2 --url http://asr:4180
+    depends_on:
+      asr:
+        condition: service_healthy
+  stable-tunnel:
+    image: cloudflare/cloudflared@sha256:a15a3b50b8dabd57ac2090e9484c0247dba9dfa1f0df4d298d4317f9d69eb2d5
+    restart: unless-stopped
+    profiles: [stable]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      asr:
+        condition: service_healthy
+volumes:
+  whisper-models:
