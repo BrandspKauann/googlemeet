@@ -64,3 +64,30 @@ test('download rejeita partes incorretas e não interfere nos demais arquivos',a
  const fetcher=async(input,init)=>{if(input!==url){unknown=true;return new Response('config')}const start=Number(new Headers(init.headers).get('Range').match(/\d+/)[0]);return new Response(new Uint8Array(start===0?3:1),{status:206})};
  const download=createRangeFetch(fetcher,{[url]:6},()=>{},{chunkSize:3,retryMs:1});const result=await download(url);await assert.rejects(()=>result.arrayBuffer(),/baixar o modelo/);assert.equal(await (await download('https://models.example.test/config.json')).text(),'config');assert.equal(unknown,true);
 });
+function nativeHarness({available}={}){
+ const timers=new Map(),instances=[],gaps=[],statuses=[],reconnects=[];let id=0;
+ class Recognition{
+  constructor(){instances.push(this)}start(){this.started=true;this.onstart?.()}abort(){this.aborted=true;this.onend?.()}stop(){this.onend?.()}
+ }
+ if(available)Recognition.available=available;
+ const window={SpeechRecognition:Recognition,localASR:{engine:()=> 'browser',abort(){}}};
+ vm.runInNewContext(source('speech-engine.js'),{window,setTimeout:(fn,ms)=>{const key=++id;timers.set(key,{fn,ms});return key},clearTimeout:key=>timers.delete(key)});
+ const start=()=>window.speechEngine.start({}, {language:'zh',text(){},status:t=>statuses.push(t),phase(){},gap:t=>gaps.push(t),reconnect:v=>reconnects.push(v)});
+ const runRetry=()=>{const entry=[...timers.entries()].find(([,timer])=>timer.ms!==2000);assert.ok(entry);timers.delete(entry[0]);entry[1].fn()};
+ return {engine:window.speechEngine,start,timers,instances,gaps,statuses,reconnects,runRetry};
+}
+test('network failures use fresh recognizers, deduplicate gaps and stop after three retries',async()=>{
+ const s=nativeHarness();await s.start();
+ for(let i=0;i<4;i++){const current=s.instances.at(-1);current.onerror({error:'network'});current.onerror({error:'network'});current.onend?.();if(i<3)s.runRetry();}
+ assert.equal(s.instances.length,4);assert.equal(s.gaps.length,1);assert.equal(s.timers.size,0);assert.equal(s.reconnects.at(-1),true);assert.match(s.statuses.at(-1),/VPN/);
+ await s.engine.retry();assert.equal(s.instances.length,5);assert.equal(s.reconnects.at(-1),false);
+ const stale=s.instances[0];stale.onerror({error:'network'});assert.equal(s.gaps.length,1);s.engine.abort();assert.equal(s.timers.size,0);
+});
+test('installed local speech is preferred without any model installation',async()=>{
+ const calls=[];const s=nativeHarness({available:async options=>{calls.push(options);return 'available'}});await s.start();
+ assert.equal(s.instances[0].processLocally,true);assert.equal(calls[0].langs[0],'zh-CN');assert.equal(calls[0].processLocally,true);assert.equal(s.timers.size,0);s.engine.abort();
+});
+test('uninstalled local speech uses remote recognition and permission errors do not retry endlessly',async()=>{
+ const s=nativeHarness({available:async()=> 'downloadable'});await s.start();assert.notEqual(s.instances[0].processLocally,true);
+ s.instances[0].onerror({error:'not-allowed'});assert.equal(s.reconnects.at(-1),true);assert.equal(s.timers.size,0);assert.equal(s.instances.length,1);s.engine.abort();
+});

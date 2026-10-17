@@ -5,7 +5,7 @@
   const actions=document.createElement('div');actions.className='room-actions';
   const quick=document.createElement('button');quick.id='quickTranslate';quick.className='primary';quick.textContent='Tentar tradução novamente';quick.hidden=true;quick.onclick=()=>{if(el('prepareTranslate').disabled)return;el('prepareTranslate').click()};
   const toggle=document.createElement('button');toggle.id='panelToggle';toggle.textContent='Conversa';toggle.setAttribute('aria-controls','lessonPanel');toggle.setAttribute('aria-expanded','false');
-  actions.append(quick,toggle);room.querySelector('.roomhead').append(actions);
+  const retryVoice=document.createElement('button');retryVoice.id='retryCaptions';retryVoice.textContent='Reconectar legendas';retryVoice.hidden=true;retryVoice.onclick=()=>window.speechEngine?.retry();actions.append(quick,retryVoice,toggle);room.querySelector('.roomhead').append(actions);
   function panel(open){aside.hidden=!open;meeting.classList.toggle('panel-open',open);toggle.setAttribute('aria-expanded',String(open));toggle.classList.toggle('selected',open)}
   toggle.onclick=()=>panel(aside.hidden);
   const close=document.createElement('button');close.className='panel-close';close.textContent='Fechar painel ×';close.onclick=()=>panel(false);aside.prepend(close);
