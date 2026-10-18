@@ -1,6 +1,9 @@
 # Desfoque de fundo da câmera
 
 O botão **Borrar fundo** fica no cabeçalho da sala para professora e aluno.
+Ao ativar, o controle **Intensidade do fundo** permite ajustar de 1% a 100%,
+com padrão de 50%. O ajuste é aplicado ao vivo, sem reiniciar a câmera ou
+trocar a faixa enviada ao outro participante.
 É opcional e independente do filtro de beleza. A primeira ativação carrega os
 recursos visuais automaticamente; não há assinatura nem API paga.
 

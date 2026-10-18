@@ -1,10 +1,12 @@
 import {FilesetResolver,ImageSegmenter} from '@mediapipe/tasks-vision';
 
-let stopped=false,reader,writer,segmenter;
+let stopped=false,reader,writer,segmenter,intensity=50;
 function dispose(){stopped=true;reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});segmenter?.close();}
-self.onmessage=({data})=>{if(data.type==='start')run(data).catch(error=>{if(!stopped)self.postMessage({type:'error',message:error.message||'Desfoque indisponível.'});dispose();});};
+function setIntensity(value){if(Number.isFinite(value))intensity=Math.max(1,Math.min(100,value));}
+self.onmessage=({data})=>{if(data.type==='intensity'){setIntensity(data.value);return;}if(data.type==='start')run(data).catch(error=>{if(!stopped)self.postMessage({type:'error',message:error.message||'Desfoque indisponível.'});dispose();});};
 
-async function run({readable,writable}){
+async function run({readable,writable,intensity:initialIntensity}){
+ setIntensity(initialIntensity);
  reader=readable.getReader();writer=writable.getWriter();
  const vision=await FilesetResolver.forVisionTasks('/background-runtime/v1/wasm');
  const options={baseOptions:{modelAssetPath:'/background-runtime/v1/selfie-segmenter.tflite',delegate:'GPU'},runningMode:'VIDEO',outputCategoryMask:false,outputConfidenceMasks:true};
@@ -29,7 +31,7 @@ async function run({readable,writable}){
    }
    if(!maskSmall)throw Error('Não foi possível preparar o fundo.');
    personCtx.clearRect(0,0,width,height);personCtx.globalCompositeOperation='source-over';personCtx.drawImage(input,0,0);personCtx.globalCompositeOperation='destination-in';personCtx.drawImage(mask,0,0);personCtx.globalCompositeOperation='source-over';
-   const radius=Math.max(10,Math.round(width*.025));ctx.filter=`blur(${radius}px)`;ctx.drawImage(input,-radius*2,-radius*2,width+radius*4,height+radius*4);ctx.filter='none';ctx.drawImage(person,0,0);
+   const radius=Math.max(1,Math.round(width*(.001+.048*intensity/100)));ctx.filter=`blur(${radius}px)`;ctx.drawImage(input,-radius*2,-radius*2,width+radius*4,height+radius*4);ctx.filter='none';ctx.drawImage(person,0,0);
    const processed=new VideoFrame(output,{timestamp:frame.timestamp});try{await writer.write(processed);}finally{processed.close();}
    if(!ready){ready=true;self.postMessage({type:'ready'});}
   }finally{frame.close();}
