@@ -14,6 +14,10 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--models', nargs='+', default=['base','small','turbo'])
 parser.add_argument('--references', default=str(ROOT/'benchmarks/references.json'))
 parser.add_argument('--output', default=str(ROOT/'data/qa/bench/comparison.json'))
+parser.add_argument('--device', choices=['cpu','cuda'], default='cpu')
+parser.add_argument('--compute-type', default='int8')
+parser.add_argument('--beam-size', type=int, default=1)
+parser.add_argument('--model-root', default=str(ROOT/'data/models'))
 args=parser.parse_args()
 manifest=Path(args.references)
 cases=json.loads(manifest.read_text(encoding='utf-8-sig'))
@@ -32,16 +36,17 @@ def distance(a,b):
 results=[]
 for size in args.models:
     print('Carregando '+size,flush=True)
-    local_model=ROOT/'data/models'/('benchmark-'+size)
+    local_model=Path(args.model_root)/('pinned-'+size)
+    if not local_model.exists(): local_model=Path(args.model_root)/('benchmark-'+size)
     required=['model.bin','config.json','tokenizer.json']+(['preprocessor_config.json'] if size in ('turbo','large-v3-turbo') else [])
     selected_model=str(local_model) if all((local_model/name).exists() for name in required) else size
-    model=WhisperModel(selected_model,device='cpu',compute_type='int8',cpu_threads=4,num_workers=1,download_root=str(ROOT/'data/models'))
+    model=WhisperModel(selected_model,device=args.device,compute_type=args.compute_type,cpu_threads=4,num_workers=1,download_root=args.model_root)
     for case in cases:
-        language=case.get('Language',case['File'].split('.')[0])
+        language=case.get('Language',Path(case['File']).stem.split('-')[0])
         filename=manifest.parent/case['File']
         def run():
             start=time.perf_counter()
-            segments,info=model.transcribe(str(filename),language=language,beam_size=1,vad_filter=True,condition_on_previous_text=False)
+            segments,info=model.transcribe(str(filename),language=language,beam_size=args.beam_size,vad_filter=True,condition_on_previous_text=False)
             text=' '.join(s.text.strip() for s in segments if s.avg_logprob>=-1.0)
             return text,time.perf_counter()-start,info.duration
         run()
@@ -50,7 +55,7 @@ for size in args.models:
         texts=[item[0] for item in measured]
         rates=[distance(ref,normalized(text,language))/max(1,len(ref)) for text in texts]
         duration=measured[0][2]
-        result=dict(model=size,device='cpu',computeType='int8',language=language,duration=duration,processingSeconds=[round(item[1],3) for item in measured],medianProcessingSeconds=round(statistics.median(item[1] for item in measured),3),realTimeFactor=round(statistics.median(item[1] for item in measured)/max(.001,duration),3),metric='CER' if language=='zh' else 'WER',errorRates=rates,reference=case['Text'],texts=texts,testType=case.get('TestType','synthetic Windows TTS'),case=case['File'])
+        result=dict(model=size,device=args.device,computeType=args.compute_type,beamSize=args.beam_size,language=language,duration=duration,processingSeconds=[round(item[1],3) for item in measured],medianProcessingSeconds=round(statistics.median(item[1] for item in measured),3),realTimeFactor=round(statistics.median(item[1] for item in measured)/max(.001,duration),3),metric='CER' if language=='zh' else 'WER',errorRates=rates,reference=case['Text'],texts=texts,testType=case.get('TestType','synthetic Windows TTS'),case=case['File'])
         if language=='zh':result['metricNote']='Raw CER includes traditional/simplified spelling differences.'
         results.append(result)
         output.parent.mkdir(parents=True,exist_ok=True)

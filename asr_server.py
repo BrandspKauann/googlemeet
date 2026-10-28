@@ -30,10 +30,33 @@ def load_model():
     global MODEL
     try:
         from faster_whisper import WhisperModel
-        MODEL = WhisperModel(MODEL_NAME, device=DEVICE,
-                             compute_type='int8' if DEVICE == 'cpu' else 'int8_float16',
+        model_path = ROOT / 'data' / 'models' / ('pinned-' + MODEL_NAME)
+        catalog = json.loads((ROOT / 'asr-models.json').read_text()) if (ROOT / 'asr-models.json').is_file() else {}
+        if MODEL_NAME in catalog:
+            from huggingface_hub import snapshot_download
+            import hashlib
+            spec = catalog[MODEL_NAME]
+            stamp = model_path / '.aula-model.json'
+            verified = json.loads(stamp.read_text()) if stamp.is_file() else None
+            if verified != spec or not all((model_path / f).is_file() for f in ['model.bin','config.json','tokenizer.json','preprocessor_config.json']):
+                snapshot_download(repo_id=spec['repository'], revision=spec['revision'], local_dir=str(model_path),
+                                  allow_patterns=['model.bin', 'config.json', 'tokenizer.json', 'preprocessor_config.json', 'vocabulary.*'])
+                digest = hashlib.sha256()
+                with (model_path / 'model.bin').open('rb') as weights:
+                    for block in iter(lambda: weights.read(4 * 1024 * 1024), b''):
+                        digest.update(block)
+                if digest.hexdigest() != spec['sha256']:
+                    raise ValueError('Model checksum mismatch')
+                stamp.write_text(json.dumps(spec))
+        selected = str(model_path) if (model_path / 'model.bin').is_file() else MODEL_NAME
+        MODEL = WhisperModel(selected, device=DEVICE,
+                             compute_type=os.environ.get('ASR_COMPUTE_TYPE', 'int8' if DEVICE == 'cpu' else 'int8_float16'),
                              cpu_threads=int(os.environ.get('ASR_CPU_THREADS', '4')), num_workers=1,
                              download_root=str(ROOT / 'data' / 'models'))
+        if DEVICE == 'cuda':
+            import numpy as np
+            warmup, _ = MODEL.transcribe(np.zeros(16000, dtype=np.float32), language='pt', beam_size=1, vad_filter=False, temperature=0, max_new_tokens=8, condition_on_previous_text=False)
+            list(warmup)
         STATE['ready'] = True
         print('Motor local pronto: ' + MODEL_NAME + ' / ' + DEVICE, flush=True)
     except Exception as exc:
@@ -148,8 +171,8 @@ class Handler(BaseHTTPRequestHandler):
             started = time.perf_counter()
             with LOCK:
                 segments, info = MODEL.transcribe(io.BytesIO(audio), language=language,
-                    beam_size=1, condition_on_previous_text=False, vad_filter=True,
-                    vad_parameters={'min_silence_duration_ms': 400},
+                    beam_size=int(os.environ.get('ASR_BEAM_SIZE', '1')), condition_on_previous_text=False, vad_filter=True,
+                    vad_parameters={'min_silence_duration_ms': 250},
                     hallucination_silence_threshold=1.0)
                 items = list(segments)
             parts = [s.text.strip() for s in items if s.avg_logprob >= -1.0]

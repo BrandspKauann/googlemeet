@@ -5,9 +5,12 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 COPY requirements-asr.txt .
 RUN pip install --no-cache-dir -r requirements-asr.txt && useradd --uid 10001 --create-home whisper && mkdir -p /app/data/models && chown -R whisper:whisper /app/data
+ARG ASR_CUDA=0
+RUN if [ "$ASR_CUDA" = "1" ]; then pip install --no-cache-dir nvidia-cublas-cu12==12.9.2.10 nvidia-cudnn-cu12==9.27.0.42; fi
+ENV LD_LIBRARY_PATH=/usr/local/lib/python3.11/site-packages/nvidia/cublas/lib:/usr/local/lib/python3.11/site-packages/nvidia/cudnn/lib
 COPY requirements-translation.txt .
 RUN pip install --no-cache-dir -r requirements-translation.txt
-COPY asr_server.py translation_engine.py translation-models.json ./
+COPY asr_server.py translation_engine.py translation-models.json asr-models.json ./
 USER whisper
 EXPOSE 4180
 CMD ["python", "asr_server.py"]

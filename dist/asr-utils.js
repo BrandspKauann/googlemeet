@@ -16,7 +16,7 @@
   for(let i=1;i<=a.length;i++){const next=[i];for(let j=1;j<=b.length;j++)next[j]=Math.min(next[j-1]+1,row[j]+1,row[j-1]+(a[i-1]===b[j-1]?0:1));row=next}
   return row[b.length]/Math.max(1,a.length);
  }
- function createGrouper(emit,{setTimer=setTimeout,clearTimer=clearTimeout}={}) {
+ function createGrouper(emit,{setTimer=setTimeout,clearTimer=clearTimeout,idleMs=()=>2000}={}) {
   let pending='',identity='',idle,maximum,queue=Promise.resolve();
   function flush(){clearTimer(idle);clearTimer(maximum);idle=maximum=undefined;if(!pending)return queue;const text=pending;pending='';queue=queue.then(()=>emit(text));return queue}
   function push(text,key='') {
@@ -26,7 +26,7 @@
    pending+=(pending?' ':'')+text;
    clearTimer(idle);
    if(/[.!?。！？][”"’')]*$/.test(text))return flush();
-   idle=setTimer(()=>flush(),2000);return queue;
+   idle=setTimer(()=>flush(),idleMs());return queue;
   }
   function abort(){clearTimer(idle);clearTimer(maximum);pending=''}
   return {push,flush,abort};

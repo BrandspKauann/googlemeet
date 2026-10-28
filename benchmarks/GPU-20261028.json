@@ -1,0 +1,968 @@
+[
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "pt",
+    "duration": 11.418,
+    "processingSeconds": [
+      0.947,
+      0.973,
+      1.062
+    ],
+    "medianProcessingSeconds": 0.973,
+    "realTimeFactor": 0.085,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+    "texts": [
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt.wav"
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "zh",
+    "duration": 8.02,
+    "processingSeconds": [
+      1.025,
+      0.958,
+      1.071
+    ],
+    "medianProcessingSeconds": 1.025,
+    "realTimeFactor": 0.128,
+    "metric": "CER",
+    "errorRates": [
+      0.36,
+      0.36,
+      0.36
+    ],
+    "reference": "老师你好。今天我们一起学习中文。请问你能听到我的声音吗？",
+    "texts": [
+      "老師你好,今天我們一起學習中文,請問你能聽到我的聲音嗎?",
+      "老師你好,今天我們一起學習中文,請問你能聽到我的聲音嗎?",
+      "老師你好,今天我們一起學習中文,請問你能聽到我的聲音嗎?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "zh.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "en",
+    "duration": 6.045,
+    "processingSeconds": [
+      1.067,
+      1.052,
+      1.195
+    ],
+    "medianProcessingSeconds": 1.067,
+    "realTimeFactor": 0.176,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Hello teacher. Today we will learn together. Can you hear my voice?",
+    "texts": [
+      "Hello teacher. Today we will learn together. Can you hear my voice?",
+      "Hello teacher. Today we will learn together. Can you hear my voice?",
+      "Hello teacher. Today we will learn together. Can you hear my voice?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "en.wav"
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "pt",
+    "duration": 7.418375,
+    "processingSeconds": [
+      1.169,
+      1.931,
+      1.257
+    ],
+    "medianProcessingSeconds": 1.257,
+    "realTimeFactor": 0.169,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+    "texts": [
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-question.wav"
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "pt",
+    "duration": 10.161875,
+    "processingSeconds": [
+      1.418,
+      1.294,
+      1.145
+    ],
+    "medianProcessingSeconds": 1.294,
+    "realTimeFactor": 0.127,
+    "metric": "WER",
+    "errorRates": [
+      0.3157894736842105,
+      0.3157894736842105,
+      0.3157894736842105
+    ],
+    "reference": "A aula começa às dez e trinta. O valor é três vírgula quatorze. Hoje é dia doze de outubro.",
+    "texts": [
+      "A aula começa às 10 e 30. O valor é 3,14. Hoje é dia 12 de outubro.",
+      "A aula começa às 10 e 30. O valor é 3,14. Hoje é dia 12 de outubro.",
+      "A aula começa às 10 e 30. O valor é 3,14. Hoje é dia 12 de outubro."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-numbers.wav"
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "pt",
+    "duration": 9.6749375,
+    "processingSeconds": [
+      2.32,
+      2.088,
+      2.272
+    ],
+    "medianProcessingSeconds": 2.272,
+    "realTimeFactor": 0.235,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+    "texts": [
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-terms.wav"
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "pt",
+    "duration": 3.0,
+    "processingSeconds": [
+      0.068,
+      0.076,
+      0.09
+    ],
+    "medianProcessingSeconds": 0.076,
+    "realTimeFactor": 0.025,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "",
+    "texts": [
+      "",
+      "",
+      ""
+    ],
+    "testType": "synthetic silence",
+    "case": "pt-silence.wav"
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "zh",
+    "duration": 7.765375,
+    "processingSeconds": [
+      2.25,
+      1.84,
+      1.671
+    ],
+    "medianProcessingSeconds": 1.84,
+    "realTimeFactor": 0.237,
+    "metric": "CER",
+    "errorRates": [
+      0.36363636363636365,
+      0.36363636363636365,
+      0.36363636363636365
+    ],
+    "reference": "你好我想要了解一下我的银行账户余额有多少谢谢",
+    "texts": [
+      "你好,我想要了解一下我的銀行賬會約有多少 呃...謝謝",
+      "你好,我想要了解一下我的銀行賬會約有多少 呃...謝謝",
+      "你好,我想要了解一下我的銀行賬會約有多少 呃...謝謝"
+    ],
+    "testType": "human MINDS-14 zh-CN (telephone banking, not classroom)",
+    "case": "minds-zh-0.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "zh",
+    "duration": 4.778625,
+    "processingSeconds": [
+      1.872,
+      1.295,
+      1.094
+    ],
+    "medianProcessingSeconds": 1.295,
+    "realTimeFactor": 0.271,
+    "metric": "CER",
+    "errorRates": [
+      0.75,
+      0.75,
+      0.75
+    ],
+    "reference": "我想查询我目前的账户余额",
+    "texts": [
+      "魔像查詢,因為目前的彰護魚兒",
+      "魔像查詢,因為目前的彰護魚兒",
+      "魔像查詢,因為目前的彰護魚兒"
+    ],
+    "testType": "human MINDS-14 zh-CN (telephone banking, not classroom)",
+    "case": "minds-zh-1.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "pt",
+    "duration": 9.045375,
+    "processingSeconds": [
+      6.169,
+      5.277,
+      7.871
+    ],
+    "medianProcessingSeconds": 6.169,
+    "realTimeFactor": 0.682,
+    "metric": "WER",
+    "errorRates": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "reference": "Bom dia estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta",
+    "texts": [
+      "Bom, de outro lugar, precisava de informações sobre como é que eu posso de depositar de",
+      "Bom, de outro lugar, precisava de informações sobre como é que eu posso de depositar de",
+      "Bom, de outro lugar, precisava de informações sobre como é que eu posso de depositar de"
+    ],
+    "testType": "human MINDS-14 pt-PT (telephone banking, not classroom)",
+    "case": "minds-pt-0.wav"
+  },
+  {
+    "model": "base",
+    "device": "cpu",
+    "computeType": "int8",
+    "beamSize": 1,
+    "language": "pt",
+    "duration": 4.693375,
+    "processingSeconds": [
+      0.995,
+      0.848,
+      0.971
+    ],
+    "medianProcessingSeconds": 0.971,
+    "realTimeFactor": 0.207,
+    "metric": "WER",
+    "errorRates": [
+      0.5555555555555556,
+      0.5555555555555556,
+      0.5555555555555556
+    ],
+    "reference": "Como faço para transferir dinheiro para a minha conta",
+    "texts": [
+      "como faz para transfrir dinheiro pra mim e conta.",
+      "como faz para transfrir dinheiro pra mim e conta.",
+      "como faz para transfrir dinheiro pra mim e conta."
+    ],
+    "testType": "human MINDS-14 pt-PT (telephone banking, not classroom)",
+    "case": "minds-pt-1.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 11.418,
+    "processingSeconds": [
+      1.104,
+      0.846,
+      0.744
+    ],
+    "medianProcessingSeconds": 0.846,
+    "realTimeFactor": 0.074,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+    "texts": [
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "zh",
+    "duration": 8.02,
+    "processingSeconds": [
+      0.67,
+      0.723,
+      0.663
+    ],
+    "medianProcessingSeconds": 0.67,
+    "realTimeFactor": 0.084,
+    "metric": "CER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "老师你好。今天我们一起学习中文。请问你能听到我的声音吗？",
+    "texts": [
+      "老师你好 今天我们一起学习中文 请问你能听到我的声音吗",
+      "老师你好 今天我们一起学习中文 请问你能听到我的声音吗",
+      "老师你好 今天我们一起学习中文 请问你能听到我的声音吗"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "zh.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "en",
+    "duration": 6.045,
+    "processingSeconds": [
+      0.64,
+      0.62,
+      0.528
+    ],
+    "medianProcessingSeconds": 0.62,
+    "realTimeFactor": 0.103,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Hello teacher. Today we will learn together. Can you hear my voice?",
+    "texts": [
+      "Hello teacher. Today we will learn together. Can you hear my voice?",
+      "Hello teacher. Today we will learn together. Can you hear my voice?",
+      "Hello teacher. Today we will learn together. Can you hear my voice?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "en.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 7.418375,
+    "processingSeconds": [
+      0.591,
+      1.057,
+      0.619
+    ],
+    "medianProcessingSeconds": 0.619,
+    "realTimeFactor": 0.083,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+    "texts": [
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-question.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 10.161875,
+    "processingSeconds": [
+      0.664,
+      0.738,
+      0.644
+    ],
+    "medianProcessingSeconds": 0.664,
+    "realTimeFactor": 0.065,
+    "metric": "WER",
+    "errorRates": [
+      0.3684210526315789,
+      0.3684210526315789,
+      0.3684210526315789
+    ],
+    "reference": "A aula começa às dez e trinta. O valor é três vírgula quatorze. Hoje é dia doze de outubro.",
+    "texts": [
+      "A aula começa às 10h30. O valor é 3,14. Hoje é dia 12 de outubro.",
+      "A aula começa às 10h30. O valor é 3,14. Hoje é dia 12 de outubro.",
+      "A aula começa às 10h30. O valor é 3,14. Hoje é dia 12 de outubro."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-numbers.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 9.6749375,
+    "processingSeconds": [
+      0.759,
+      0.675,
+      0.699
+    ],
+    "medianProcessingSeconds": 0.699,
+    "realTimeFactor": 0.072,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+    "texts": [
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-terms.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 3.0,
+    "processingSeconds": [
+      0.025,
+      0.038,
+      0.025
+    ],
+    "medianProcessingSeconds": 0.025,
+    "realTimeFactor": 0.008,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "",
+    "texts": [
+      "",
+      "",
+      ""
+    ],
+    "testType": "synthetic silence",
+    "case": "pt-silence.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "zh",
+    "duration": 7.765375,
+    "processingSeconds": [
+      0.752,
+      0.644,
+      1.106
+    ],
+    "medianProcessingSeconds": 0.752,
+    "realTimeFactor": 0.097,
+    "metric": "CER",
+    "errorRates": [
+      0.045454545454545456,
+      0.045454545454545456,
+      0.045454545454545456
+    ],
+    "reference": "你好我想要了解一下我的银行账户余额有多少谢谢",
+    "texts": [
+      "你好,我想要了解一下我的银行账户的余额有多少。谢谢。",
+      "你好,我想要了解一下我的银行账户的余额有多少。谢谢。",
+      "你好,我想要了解一下我的银行账户的余额有多少。谢谢。"
+    ],
+    "testType": "human MINDS-14 zh-CN (telephone banking, not classroom)",
+    "case": "minds-zh-0.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "zh",
+    "duration": 4.778625,
+    "processingSeconds": [
+      0.615,
+      1.176,
+      0.571
+    ],
+    "medianProcessingSeconds": 0.615,
+    "realTimeFactor": 0.129,
+    "metric": "CER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "我想查询我目前的账户余额",
+    "texts": [
+      "我想查询我目前的账户余额",
+      "我想查询我目前的账户余额",
+      "我想查询我目前的账户余额"
+    ],
+    "testType": "human MINDS-14 zh-CN (telephone banking, not classroom)",
+    "case": "minds-zh-1.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 9.045375,
+    "processingSeconds": [
+      0.653,
+      0.622,
+      0.78
+    ],
+    "medianProcessingSeconds": 0.653,
+    "realTimeFactor": 0.072,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Bom dia estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta",
+    "texts": [
+      "Bom dia, estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta.",
+      "Bom dia, estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta.",
+      "Bom dia, estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta."
+    ],
+    "testType": "human MINDS-14 pt-PT (telephone banking, not classroom)",
+    "case": "minds-pt-0.wav"
+  },
+  {
+    "model": "turbo",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 4.693375,
+    "processingSeconds": [
+      0.695,
+      0.551,
+      0.522
+    ],
+    "medianProcessingSeconds": 0.551,
+    "realTimeFactor": 0.117,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Como faço para transferir dinheiro para a minha conta",
+    "texts": [
+      "Como faço para transferir dinheiro para a minha conta?",
+      "Como faço para transferir dinheiro para a minha conta?",
+      "Como faço para transferir dinheiro para a minha conta?"
+    ],
+    "testType": "human MINDS-14 pt-PT (telephone banking, not classroom)",
+    "case": "minds-pt-1.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 11.418,
+    "processingSeconds": [
+      1.378,
+      1.309,
+      1.66
+    ],
+    "medianProcessingSeconds": 1.378,
+    "realTimeFactor": 0.121,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+    "texts": [
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula.",
+      "Olá, tudo bem? Hoje vamos aprender português. Você pode compartilhar sua tela e acompanhar a tradução da aula."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "zh",
+    "duration": 8.02,
+    "processingSeconds": [
+      1.353,
+      1.447,
+      1.252
+    ],
+    "medianProcessingSeconds": 1.353,
+    "realTimeFactor": 0.169,
+    "metric": "CER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "老师你好。今天我们一起学习中文。请问你能听到我的声音吗？",
+    "texts": [
+      "老师你好 今天我们一起学习中文 请问你能听到我的声音吗?",
+      "老师你好 今天我们一起学习中文 请问你能听到我的声音吗?",
+      "老师你好 今天我们一起学习中文 请问你能听到我的声音吗?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "zh.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "en",
+    "duration": 6.045,
+    "processingSeconds": [
+      1.214,
+      0.86,
+      1.25
+    ],
+    "medianProcessingSeconds": 1.214,
+    "realTimeFactor": 0.201,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Hello teacher. Today we will learn together. Can you hear my voice?",
+    "texts": [
+      "Hello teacher. Today we will learn together. Can you hear my voice?",
+      "Hello teacher. Today we will learn together. Can you hear my voice?",
+      "Hello teacher. Today we will learn together. Can you hear my voice?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "en.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 7.418375,
+    "processingSeconds": [
+      1.049,
+      1.099,
+      0.958
+    ],
+    "medianProcessingSeconds": 1.049,
+    "realTimeFactor": 0.141,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+    "texts": [
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+      "A palavra carro tem quantas letras? A palavra coração significa o quê?"
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-question.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 10.161875,
+    "processingSeconds": [
+      1.235,
+      1.447,
+      1.446
+    ],
+    "medianProcessingSeconds": 1.446,
+    "realTimeFactor": 0.142,
+    "metric": "WER",
+    "errorRates": [
+      0.3684210526315789,
+      0.3684210526315789,
+      0.3684210526315789
+    ],
+    "reference": "A aula começa às dez e trinta. O valor é três vírgula quatorze. Hoje é dia doze de outubro.",
+    "texts": [
+      "A aula começa às 10h30. O valor é 3,14. Hoje é dia 12 de outubro.",
+      "A aula começa às 10h30. O valor é 3,14. Hoje é dia 12 de outubro.",
+      "A aula começa às 10h30. O valor é 3,14. Hoje é dia 12 de outubro."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-numbers.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 9.6749375,
+    "processingSeconds": [
+      1.327,
+      1.295,
+      1.36
+    ],
+    "medianProcessingSeconds": 1.327,
+    "realTimeFactor": 0.137,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+    "texts": [
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas.",
+      "Vamos estudar substantivos, adjetivos e conjugação. Compartilhe a tela e acompanhe as legendas."
+    ],
+    "testType": "synthetic Windows TTS",
+    "case": "pt-terms.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 3.0,
+    "processingSeconds": [
+      0.027,
+      0.03,
+      0.029
+    ],
+    "medianProcessingSeconds": 0.029,
+    "realTimeFactor": 0.01,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "",
+    "texts": [
+      "",
+      "",
+      ""
+    ],
+    "testType": "synthetic silence",
+    "case": "pt-silence.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "zh",
+    "duration": 7.765375,
+    "processingSeconds": [
+      1.199,
+      1.278,
+      1.307
+    ],
+    "medianProcessingSeconds": 1.278,
+    "realTimeFactor": 0.165,
+    "metric": "CER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "你好我想要了解一下我的银行账户余额有多少谢谢",
+    "texts": [
+      "你好,我想要了解一下我的银行账户余额有多少,谢谢。",
+      "你好,我想要了解一下我的银行账户余额有多少,谢谢。",
+      "你好,我想要了解一下我的银行账户余额有多少,谢谢。"
+    ],
+    "testType": "human MINDS-14 zh-CN (telephone banking, not classroom)",
+    "case": "minds-zh-0.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "zh",
+    "duration": 4.778625,
+    "processingSeconds": [
+      1.017,
+      0.881,
+      0.891
+    ],
+    "medianProcessingSeconds": 0.891,
+    "realTimeFactor": 0.186,
+    "metric": "CER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "我想查询我目前的账户余额",
+    "texts": [
+      "我想查询我目前的账户余额",
+      "我想查询我目前的账户余额",
+      "我想查询我目前的账户余额"
+    ],
+    "testType": "human MINDS-14 zh-CN (telephone banking, not classroom)",
+    "case": "minds-zh-1.wav",
+    "metricNote": "Raw CER includes traditional/simplified spelling differences."
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 9.045375,
+    "processingSeconds": [
+      1.282,
+      1.318,
+      1.215
+    ],
+    "medianProcessingSeconds": 1.282,
+    "realTimeFactor": 0.142,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Bom dia estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta",
+    "texts": [
+      "Bom dia, estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta.",
+      "Bom dia, estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta.",
+      "Bom dia, estou a ligar porque precisava de informações sobre como é que eu posso depositar dinheiro na minha conta."
+    ],
+    "testType": "human MINDS-14 pt-PT (telephone banking, not classroom)",
+    "case": "minds-pt-0.wav"
+  },
+  {
+    "model": "large-v3",
+    "device": "cuda",
+    "computeType": "int8_float16",
+    "beamSize": 3,
+    "language": "pt",
+    "duration": 4.693375,
+    "processingSeconds": [
+      0.88,
+      0.891,
+      0.984
+    ],
+    "medianProcessingSeconds": 0.891,
+    "realTimeFactor": 0.19,
+    "metric": "WER",
+    "errorRates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "Como faço para transferir dinheiro para a minha conta",
+    "texts": [
+      "Como faço para transferir dinheiro para a minha conta?",
+      "Como faço para transferir dinheiro para a minha conta?",
+      "Como faço para transferir dinheiro para a minha conta?"
+    ],
+    "testType": "human MINDS-14 pt-PT (telephone banking, not classroom)",
+    "case": "minds-pt-1.wav"
+  }
+]

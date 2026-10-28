@@ -69,3 +69,12 @@ test('listener sees translation first and unchanged source underneath',async()=>
  const s=setup();const r=record();s.context.records.set(r.data.id,r);await s.context.queueTranslation(r);
  const shown=s.captions.at(-1);assert.equal(shown[1],r.translations.pt);assert.equal(shown[2],r.data.text);assert.equal(shown[6].primary,'pt');assert.equal(shown[6].secondary,'zh');
 });
+
+
+test('recognition gaps remain in history without replacing speech captions or calling translation',async()=>{
+ const s=setup();const speech=record();s.context.records.set(speech.data.id,speech);await s.context.queueTranslation(speech);
+ const captionCount=s.captions.length,requestCount=s.requests.length;
+ const gap={...record('Trecho omitido'),data:{...record().data,id:'gap',kind:'gap'}};
+ s.context.records.set('gap',gap);await s.context.queueTranslation(gap);
+ assert.equal(s.captions.length,captionCount);assert.equal(s.requests.length,requestCount);assert.match(gap.node.textContent,/Interrupção/);
+});

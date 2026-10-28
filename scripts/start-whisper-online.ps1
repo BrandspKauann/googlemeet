@@ -1,4 +1,5 @@
-﻿param([ValidateSet('base','small','turbo')][string]$Model='base')
+﻿param([ValidateSet('base','small','turbo','large-v3')][string]$Model='large-v3',
+      [ValidateSet('cpu','cuda')][string]$Device='cuda')
 $ErrorActionPreference='Stop'
 $projectDir=Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $projectDir
@@ -13,11 +14,13 @@ if(!(Test-Path -LiteralPath $configPath)){
   [IO.File]::WriteAllText($configPath,"ASR_SECRET=$secretValue`nASR_MODEL=$Model`n")
 }
 $env:ASR_MODEL=$Model
-docker compose --env-file $configPath -f docker/compose.whisper.yml --profile quick up -d --build
+$composeArgs=@('compose','--env-file',$configPath,'-f','docker/compose.whisper.yml')
+if($Device -eq 'cuda'){$composeArgs+=@('-f','docker/compose.gpu.yml')}
+docker @composeArgs --profile quick up -d --build
 if($LASTEXITCODE -ne 0){throw 'Não foi possível iniciar o Docker do reconhecimento.'}
 $endpoint=$null
 for($attempt=0;$attempt -lt 60;$attempt++){
-  $tunnelLog=docker compose --env-file $configPath -f docker/compose.whisper.yml logs --no-color --tail 100 tunnel 2>&1 | Out-String
+  $tunnelLog=docker @composeArgs logs --no-color --tail 100 tunnel 2>&1 | Out-String
   $found=[regex]::Matches($tunnelLog,'https://[a-z0-9-]+\.trycloudflare\.com')
   if($found.Count -gt 0){$endpoint=$found[$found.Count-1].Value;break}
   Start-Sleep -Seconds 2

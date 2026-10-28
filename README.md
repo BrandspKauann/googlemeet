@@ -67,3 +67,14 @@ Testes: `npm test`. Testam autenticação, permissões, aprovação, sinalizaç�
 
 Veja [OpenMakeupSDK na câmera](BELEZA-OPENMAKEUP.md) para uso, origem, privacidade e limites da integração gratuita.
 
+
+
+## Servidor com GPU e menor espera nas legendas
+
+O computador da aula usa agora `large-v3` com CUDA na RTX 3050, via
+`docker/compose.gpu.yml`. O modo CPU continua separado para reversão explícita.
+Execute `powershell -File scripts/start-whisper-online.ps1` para iniciar o
+padrão com GPU, ou `-Device cpu -Model base` para voltar ao modo anterior.
+A tradução permanece no servidor, e participantes não baixam modelos de voz.
+
+Veja [medições e limites da comparação](benchmarks/GPU-20261028.md).
