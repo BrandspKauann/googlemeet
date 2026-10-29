@@ -22,7 +22,7 @@
     preparation?.abort();const controller=new AbortController();preparation=controller;
     return window.createWorkerBeauty(input,{...values},status,error=>{if(ticket===generation)recover(error)},()=>ticket!==generation,controller.signal);
   }
-  async function recover(error){preparation?.abort();enabled=false;const original=raw,old=pipeline;pipeline=null;generation++;try{if(original&&onStream)await onStream(original)}catch{}finally{old?.stop();comparing=false;sync();status((error.message||'Filtro indisponível.')+' Sua câmera continua sem efeito.')}}
+  async function recover(error){const original=raw,old=pipeline;pipeline=null;generation++;enabled=false;try{if(original&&onStream)await onStream(original)}catch{}finally{preparation?.abort();old?.stop();comparing=false;sync();status((error.message||'Filtro indisponível.')+' Sua câmera continua sem efeito.')}}
   async function apply(){const ticket=++generation;el('beautyEnabled').disabled=true;try{
     if(!enabled||!raw||!teacher){preparation?.abort();const old=pipeline;pipeline=null;if(old&&raw&&onStream)await onStream(raw);old?.stop();if(ticket===generation)status(enabled?'Efeito selecionado. Ligue a câmera para aplicar.':'Desligado. Sua câmera continua original.');return}
     if(pipeline)return;

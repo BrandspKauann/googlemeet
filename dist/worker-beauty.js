@@ -2,19 +2,20 @@ async function startWorkerBeauty(input,values,onStatus,onError,cancelled,signal)
   if(!window.MediaStreamTrackProcessor||!window.MediaStreamTrackGenerator||!window.OffscreenCanvas)
     throw Error('Para manter o filtro em outra aba, use uma versão recente do Chrome ou Edge.');
   const track=input.getVideoTracks()[0].clone();
-  let worker,output,timeout,settled=false,rejectReady;
-  const stop=()=>{signal?.removeEventListener('abort',stop);clearTimeout(timeout);worker?.terminate();track.stop();output?.stop();if(!settled){settled=true;rejectReady?.(Error('Preparação do filtro cancelada.'));}};
+  let worker,output,timeout,settled=false,rejectReady,watchdog,lastFrame=0,failedOnce=false;
+  const stop=()=>{signal?.removeEventListener('abort',stop);clearTimeout(timeout);clearInterval(watchdog);worker?.terminate();track.stop();output?.stop();if(!settled){settled=true;rejectReady?.(Error('Preparação do filtro cancelada.'));}};
   try{
     if(signal?.aborted)throw Error('Preparação do filtro cancelada.');
     signal?.addEventListener('abort',stop,{once:true});
     const processor=new MediaStreamTrackProcessor({track,maxBufferSize:1});output=new MediaStreamTrackGenerator({kind:'video'});output.contentHint='motion';
-    worker=new Worker('/openmakeup/worker.js?v=1');
+    worker=new Worker('/openmakeup/worker.js?v=20261028-stable1');
     const ready=new Promise((resolve,reject)=>{
       rejectReady=reject;
-      const failed=error=>{if(!settled){settled=true;clearTimeout(timeout);reject(error);}else if(!cancelled())onError(error);};
+      const failed=error=>{if(failedOnce)return;failedOnce=true;clearInterval(watchdog);if(!settled){settled=true;clearTimeout(timeout);reject(error);}else if(!cancelled())onError(error);};
       worker.onerror=event=>failed(Error(event.message||'O processamento do filtro foi interrompido.'));
       worker.onmessage=({data})=>{
-        if(data.type==='ready'&&!settled){settled=true;clearTimeout(timeout);resolve();}
+        if(data.type==='ready'&&!settled){settled=true;clearTimeout(timeout);lastFrame=Date.now();watchdog=setInterval(()=>{if(Date.now()-lastFrame>8000&&!cancelled()){failed(Error('O filtro parou de atualizar a câmera.'));stop();}},2000);resolve();}
+        else if(data.type==='frame'){lastFrame=Date.now();}
         else if(data.type==='status'&&!cancelled())onStatus(data.message);
         else if(data.type==='error')failed(Error(data.message));
       };

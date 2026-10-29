@@ -4,7 +4,7 @@ import {CanvasTexture,LinearFilter,PlaneGeometry,SRGBColorSpace,Texture,TextureL
 
 
 // The SDK uses window only for resize listeners and dimensions. No DOM rendering.
-self.devicePixelRatio=1;self.innerWidth=960;self.innerHeight=720;
+self.devicePixelRatio=1;self.innerWidth=640;self.innerHeight=480;
 const textures=[];
 TextureLoader.prototype.load=function(url,onLoad,onProgress,onError){
   const texture=new Texture();
@@ -21,18 +21,18 @@ onmessage=({data})=>{
 function dispose(){stopped=true;reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});mesh?.close();makeupMesh?.close();skin?.dispose();sdk?.dispose();}
 async function run({readable,writable,values:initial}){
   const {cachedFetch}=await import('/beauty-cache.js');self.fetch=cachedFetch;
-  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js')]);
+  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js?v=20261028-stable1')]);
   values=initial;reader=readable.getReader();writer=writable.getWriter();
   const first=await reader.read();if(first.done)throw Error('A câmera foi encerrada.');
-  const ratio=Math.min(1,960/first.value.displayWidth,720/first.value.displayHeight);
+  const ratio=Math.min(1,640/first.value.displayWidth,480/first.value.displayHeight);
   const w=Math.max(2,Math.round(first.value.displayWidth*ratio)),h=Math.max(2,Math.round(first.value.displayHeight*ratio));
   first.value.close();
   const input=new OffscreenCanvas(w,h),ctx=input.getContext('2d');
   const softened=new OffscreenCanvas(w,h),output=new OffscreenCanvas(w,h);
   skin=new Renderer(softened);await skin.ready;
   postMessage({type:'status',message:'Preparando rastreamento facial…'});
-  mesh=new FaceMesh();if(await mesh.load()!=='ready')throw Error('Não foi possível preparar o rastreamento facial.');
-  makeupMesh=new FaceMesh();if(await makeupMesh.load()!=='ready')throw Error('Não foi possível preparar a maquiagem.');
+  mesh=new FaceMesh({delegate:'CPU'});if(await mesh.load()!=='ready')throw Error('Não foi possível preparar o rastreamento facial.');
+  makeupMesh=new FaceMesh({delegate:'CPU'});if(await makeupMesh.load()!=='ready')throw Error('Não foi possível preparar a maquiagem.');
   self.window=self;
   const video={videoWidth:w,videoHeight:h,readyState:2,HAVE_CURRENT_DATA:2,addEventListener(){},removeEventListener(){}};
   postMessage({type:'status',message:'Carregando o filtro de beleza…'});
@@ -63,18 +63,18 @@ async function run({readable,writable,values:initial}){
     mat.fragmentShader='uniform highp float aulaIntensity;\n'+mat.fragmentShader.slice(0,end)+'fragColor.a *= aulaIntensity;\n'+mat.fragmentShader.slice(end);mat.needsUpdate=true;
   }
   await sdk.apply('blush',{color:'#cc7180',finish:'matte'});await sdk.apply('lipstick',{color:'#a54b61',finish:'matte'});
-  let lastMakeupDetection=-Infinity,lastDetection=-Infinity,lastFrame=-Infinity,hasFace=false,landmarks,ready=false,lastStatus;
+  let lastMakeupDetection=-Infinity,lastDetection=-Infinity,lastFrame=-Infinity,hasFace=false,landmarks,ready=false,lastStatus,lastHeartbeat=-Infinity;
   while(!stopped){
-    const {done,value:frame}=await reader.read();if(done)break;
+    const {done,value:frame}=await reader.read();if(done){if(!stopped)throw Error('O filtro deixou de receber imagens da câmera.');break;}
     try{
-      if(frame.timestamp-lastFrame<1000000/24)continue;lastFrame=frame.timestamp;
+      if(frame.timestamp-lastFrame<1000000/20)continue;lastFrame=frame.timestamp;
       ctx.drawImage(frame,0,0,w,h);const now=performance.now();
-      if(now-lastDetection>=100){
+      if(now-lastDetection>=200){
         const result=mesh.landmarker.detectForVideo(input,now);landmarks=result.faceLandmarks;
         mesh._ingest(result,now/1000,false);hasFace=!!landmarks?.length;lastDetection=now;
       }
       skin.render(input,w,h,mesh.presence>0?mesh.points:null,values);
-      if(now-lastMakeupDetection>=100){const result=makeupMesh.landmarker.detectForVideo(softened,now);landmarks=result.faceLandmarks;hasFace=!!landmarks?.length;lastMakeupDetection=now;}
+      if(now-lastMakeupDetection>=200){const result=makeupMesh.landmarker.detectForVideo(softened,now);landmarks=result.faceLandmarks;hasFace=!!landmarks?.length;lastMakeupDetection=now;}
       engine.faceObject3D.visible=hasFace;
       if(hasFace)engine._onResults({multiFaceLandmarks:landmarks});
       engine.blushMat.uniforms.aulaIntensity.value=values.blush/100;engine.lipsMat.uniforms.aulaIntensity.value=values.lipstick/100;
@@ -85,6 +85,7 @@ async function run({readable,writable,values:initial}){
       const processed=new VideoFrame(output,{timestamp:frame.timestamp});
       try{await writer.write(processed);}finally{processed.close();}
       if(!ready){ready=true;postMessage({type:'ready'});}
+      if(now-lastHeartbeat>=1000){lastHeartbeat=now;postMessage({type:'frame'});}
       if(lastStatus!==hasFace){lastStatus=hasFace;postMessage({type:'status',message:hasFace?'Filtro de beleza ativo, inclusive em outra aba.':'Filtro pronto. Aproxime o rosto da câmera para aplicar os ajustes.'});}
     }finally{frame.close();}
   }

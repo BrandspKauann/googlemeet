@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'O filtro parou de atualizar a câmera. Sua câmera continua sem efeito.':'美颜画面更新已中断，摄像头已恢复为原始画面。','O filtro deixou de receber imagens da câmera. Sua câmera continua sem efeito.':'美颜未能继续接收摄像头画面，摄像头已恢复为原始画面。',
     'Transcrição automática ativa. Fale normalmente.':'自动转写已启用，请正常说话。','Não foi possível reconhecer uma parte da fala com segurança.':'部分语音无法可靠识别。',
     'Intensidade do fundo':'背景虚化强度',
     'Câmera pausada':'摄像头画面已暂停','Borrar fundo':'背景虚化','Fundo borrado':'背景已虚化','Borrar somente o fundo da sua câmera':'仅虚化您的摄像头背景','Desfoque disponível no Chrome e Edge atualizados.':'背景虚化需要最新版 Chrome 或 Edge。','Desfoque selecionado. Ligue a câmera para aplicar.':'已选择背景虚化，打开摄像头后生效。','Preparando desfoque… A câmera fica pausada até o efeito estar pronto.':'正在准备背景虚化，效果就绪前摄像头画面暂停。','Fundo borrado. O efeito também aparece para a outra pessoa.':'背景已虚化，对方也会看到此效果。','Não foi possível borrar o fundo. Desative o efeito e tente novamente.':'无法虚化背景，请关闭效果后重试。','Desfoque indisponível. Desative o fundo borrado para retomar a câmera.':'背景虚化暂不可用，请关闭虚化以恢复摄像头。',

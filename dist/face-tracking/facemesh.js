@@ -16,7 +16,8 @@ const MODEL =
  * network.
  */
 export class FaceMesh {
-  constructor() {
+  constructor({delegate='GPU'} = {}) {
+    this.delegate = delegate;
     this.landmarker = null;
     this.status = 'idle'; // idle | loading | ready | failed
     this.error = null;
@@ -48,7 +49,7 @@ export class FaceMesh {
       const response=await cachedFetch(MODEL);if(!response.ok)throw Error('Falha ao baixar o modelo facial.');
       const modelAssetBuffer=new Uint8Array(await response.arrayBuffer());
       const options={
-        baseOptions: { modelAssetBuffer, delegate: 'GPU' },
+        baseOptions: { modelAssetBuffer, delegate: this.delegate },
         runningMode: 'VIDEO',
         numFaces: 1,
         minFaceDetectionConfidence: 0.4,

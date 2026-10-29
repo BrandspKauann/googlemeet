@@ -3,16 +3,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 function setup(){
-  const workers=[],clones=[],outputs=[],statuses=[],errors=[];
+  const workers=[],clones=[],outputs=[],statuses=[],errors=[],intervals=new Map();let now=0,sequence=0;
   const raw={stopped:false,clone(){const track={stopped:false,stop(){this.stopped=true}};clones.push(track);return track;}};
   class Worker{constructor(){workers.push(this)}postMessage(message,transfer){(this.messages||=[]).push({message,transfer})}terminate(){this.terminated=true}reply(data){this.onmessage({data})}}
   class Generator{constructor(){this.writable={};outputs.push(this)}stop(){this.stopped=true}}
   class Processor{constructor(options){this.readable={};this.options=options}}
   class Stream{constructor(tracks){this.tracks=tracks}}
   const window={createCompatibleBeauty:async()=>{throw Error('GPU unavailable')},MediaStreamTrackProcessor:Processor,MediaStreamTrackGenerator:Generator,OffscreenCanvas:{}};
-  vm.runInNewContext(fs.readFileSync('dist/worker-beauty.js','utf8'),{window,Worker,MediaStreamTrackProcessor:Processor,MediaStreamTrackGenerator:Generator,MediaStream:Stream,Error,setTimeout,clearTimeout});
+  vm.runInNewContext(fs.readFileSync('dist/worker-beauty.js','utf8'),{window,Worker,MediaStreamTrackProcessor:Processor,MediaStreamTrackGenerator:Generator,MediaStream:Stream,Error,setTimeout,clearTimeout,Date:{now:()=>now},setInterval:fn=>{const id=++sequence;intervals.set(id,fn);return id},clearInterval:id=>intervals.delete(id)});
   const start=signal=>window.createWorkerBeauty({getVideoTracks:()=>[raw]},{smooth:68},m=>statuses.push(m),e=>errors.push(e.message),()=>false,signal);
-  return {start,raw,workers,clones,outputs,statuses,errors,window};
+  return {start,raw,workers,clones,outputs,statuses,errors,window,tick(ms){now+=ms;for(const fn of [...intervals.values()])fn()},intervals};
 }
 test('beauty transfers bounded frame streams, publishes only prepared output and retains source camera',async()=>{
   const s=setup(),pending=s.start();const worker=s.workers[0],init=worker.messages[0];
@@ -36,4 +36,14 @@ test('missing background-video API selects the combined compatible pipeline',asy
  const compatible={stream:{compatible:true},stop(){}};
  s.window.createCompatibleBeauty=async()=>{called++;return compatible};
  assert.equal(await s.start(),compatible);assert.equal(called,1);assert.equal(s.workers.length,0);assert.equal(s.raw.stopped,false);
+});
+
+
+test('stalled beauty frames trigger one recovery and release the failed output, not the camera',async()=>{
+ const s=setup(),pending=s.start();s.workers[0].reply({type:'ready'});await pending;
+ s.tick(7000);assert.equal(s.errors.length,0);s.workers[0].reply({type:'frame'});
+ s.tick(7000);assert.equal(s.errors.length,0);s.tick(2000);
+ assert.equal(s.errors.length,1);assert.match(s.errors[0],/parou de atualizar/);
+ assert.equal(s.workers[0].terminated,true);assert.equal(s.outputs[0].stopped,true);assert.equal(s.raw.stopped,false);
+ s.tick(10000);assert.equal(s.errors.length,1);assert.equal(s.intervals.size,0);
 });
