@@ -94,7 +94,7 @@ async function startRecognition(stream){
   window.localASR?.setActive(true);
   const result=await window.speechEngine.start(stream,{language:state.you.language,status:t=>$('mediaStatus').textContent=t,reconnect:show=>{$('retryCaptions').hidden=!show;if(show)window.captionUI?.openPanel?.()},text:t=>recognizedText(t),gap:t=>postText(t,'gap'),phase:t=>window.captionUI?.phase(t),transcribe:async audio=>{const res=await fetch(`/api/rooms/${roomId}/asr`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'audio/wav'},body:audio});const data=await res.json();if(!res.ok)throw Error(data.error||'Falha no motor local.');return data;}});
   if(stream!==audioStream)return;
-  if(!result?.unavailable)$('mediaStatus').textContent=engine==='browser'?'Microfone ligado. Reconhecimento do navegador selecionado.':engine==='paraformer'?'Microfone ligado com Paraformer. Áudio processado neste dispositivo.':engine==='server'?'Microfone ligado. Legendas automáticas ativas.':'Microfone ligado com Whisper. Áudio temporário, sem gravação.';
+  if(!result?.unavailable)$('mediaStatus').textContent=engine==='browser'?'Microfone ligado. Reconhecimento do navegador selecionado.':engine==='paraformer'?'Microfone ligado com Paraformer. Áudio processado neste dispositivo.':engine==='server'?'Microfone ligado. As legendas chegam após 6 segundos de pausa.':'Microfone ligado com Whisper. Áudio temporário, sem gravação.';
  }catch(error){
   window.speechEngine?.abort();if(stream!==audioStream)return;
   window.localASR?.setActive(true,true);

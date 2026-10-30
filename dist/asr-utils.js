@@ -10,6 +10,31 @@
   }
   return out;
  }
+ // Keep a whole speaking turn until the participant pauses, then submit it.
+ function createPauseBuffer(rate,{pauseSeconds=6,segmentSeconds=10,maxSegments=120}={}){
+  let parts=[],count=0,quiet=0,active=false,segments=[];
+  function seal(trim=0){
+   const keep=Math.max(0,count-Math.min(trim,count));
+   if(keep>=rate*.25){
+    const mono=new Float32Array(keep);let at=0,power=0;
+    for(const part of parts){const n=Math.min(part.length,keep-at);if(n<=0)break;mono.set(part.subarray(0,n),at);for(let i=0;i<n;i++)power+=part[i]*part[i];at+=n;}
+    if(Math.sqrt(power/keep)>=.002){const pcm=resample(mono,rate);for(let offset=0;offset<pcm.length;offset+=16000*segmentSeconds)segments.push(pcm.slice(offset,offset+16000*segmentSeconds));}
+   }
+   parts=[];count=0;
+  }
+  function flush(){seal(quiet);const result=segments;segments=[];quiet=0;active=false;return result.length?result:null;}
+  function push(part){
+   let energy=0;for(const sample of part)energy+=sample*sample;
+   const speaking=Math.sqrt(energy/Math.max(1,part.length))>=.003;
+   if(!active&&!speaking)return null;active=true;parts.push(part);count+=part.length;quiet=speaking?0:quiet+part.length;
+   if(quiet>=rate*pauseSeconds)return flush();
+   if(count>=rate*segmentSeconds)seal();
+   if(segments.length>maxSegments)throw Error('Fala contínua muito longa. Desligue o microfone para concluir os trechos pendentes.');
+   return null;
+  }
+  function abort(){parts=[];segments=[];count=0;quiet=0;active=false;}
+  return {push,flush,abort};
+ }
  function normalize(text){return text.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{S}]/gu,'').trim().split(/\s+/).filter(Boolean)}
  function errorRate(reference,text,language='pt') {
   const tokens=t=>language==='zh'?Array.from(normalize(t).join('')):normalize(t);const a=tokens(reference),b=tokens(text);let row=Array.from({length:b.length+1},(_,i)=>i);
@@ -32,5 +57,5 @@
   return {push,flush,abort};
  }
  function progressLabel(p){if(p.status!=='progress')return p.file||p.status||'Preparando…';const mb=n=>(n/1048576).toFixed(1);const part=p.file?.includes('encoder')?' (parte 1/2)':p.file?.includes('decoder')?' (parte 2/2)':'';return 'Baixando modelo'+part+' · '+Math.round(p.progress||0)+'%'+(Number.isFinite(p.loaded)&&Number.isFinite(p.total)?' · '+mb(p.loaded)+' MB de '+mb(p.total)+' MB':'')}
- window.asrUtils={resample,errorRate,createGrouper,progressLabel};
+ window.asrUtils={resample,createPauseBuffer,errorRate,createGrouper,progressLabel};
 })();

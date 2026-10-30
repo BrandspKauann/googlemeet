@@ -91,3 +91,12 @@ test('uninstalled local speech uses remote recognition and permission errors do 
  const s=nativeHarness({available:async()=> 'downloadable'});await s.start();assert.notEqual(s.instances[0].processLocally,true);
  s.instances[0].onerror({error:'not-allowed'});assert.equal(s.reconnects.at(-1),true);assert.equal(s.timers.size,0);assert.equal(s.instances.length,1);s.engine.abort();
 });
+
+
+test('six-second pause resets on resumed speech and buffered audio is released on abort',()=>{
+ const buffer=utilities().createPauseBuffer(16000);
+ const voice=seconds=>new Float32Array(seconds*16000).fill(.1),silence=seconds=>new Float32Array(seconds*16000);
+ assert.equal(buffer.push(silence(10)),null);assert.equal(buffer.push(voice(1)),null);assert.equal(buffer.push(silence(5)),null);
+ assert.equal(buffer.push(voice(1)),null);assert.equal(buffer.push(silence(5)),null);const turn=buffer.push(silence(1));assert.ok(turn?.length);assert.equal(buffer.flush(),null);
+ buffer.push(voice(2));buffer.abort();assert.equal(buffer.flush(),null);
+});

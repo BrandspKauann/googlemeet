@@ -22,28 +22,41 @@
   const useParaformer=select.value==='paraformer',useDevice=select.value==='device'||useParaformer;const device=useParaformer?window.paraformerASR:window.deviceASR;if(useParaformer&&!['zh','en'].includes(config.language))throw Error('Paraformer reconhece mandarim e inglês. Para português ou espanhol, escolha outro motor.');if(useDevice){if(!device?.ready())throw new Error('Clique em Preparar reconhecimento antes de ligar o microfone.')}else if(!await health())throw new Error(select.value==='server'?'O servidor de voz da aula está offline. Verifique se o computador e o Docker estão ligados.':'Whisper local não está pronto. Selecione Navegador ou aguarde o modelo.');
   const context=new AudioContext();try{await context.audioWorklet.addModule('/capture-processor.js');await context.resume()}catch(error){await context.close();throw error}
   const source=context.createMediaStreamSource(stream);const capture=new AudioWorkletNode(context,'classroom-capture',{channelCount:1,channelCountMode:'explicit'});const mute=context.createGain();mute.gain.value=0;
-  const lowLatency=select.value==='server';
-  const generation=++modeGeneration;const current={context,source,capture,mute,parts:[],samples:0,power:0,quiet:0,queue:Promise.resolve(),queued:0,pendingStop:false,config};job=current;select.disabled=true;check.disabled=true;
-  function flush(){
-   const count=current.samples,parts=current.parts,power=current.power;current.parts=[];current.samples=0;current.power=0;current.quiet=0;
-   if(!count||Math.sqrt(power/count)<0.002||count/context.sampleRate<0.25)return;
-   if(current.queued>=2){status.textContent='Motor atrasado. Um trecho não pôde ser processado.';config.gap('Trecho de áudio não processado: Reconhecedor atrasado.');return}
-   let audio;if(useDevice){const mono=new Float32Array(count);let at=0;for(const part of parts){mono.set(part,at);at+=part.length}audio=window.asrUtils.resample(mono,context.sampleRate)}else if(select.value==='server'){const mono=new Float32Array(count);let at=0;for(const part of parts){mono.set(part,at);at+=part.length}const pcm=window.asrUtils.resample(mono,context.sampleRate);audio=wav([pcm],pcm.length,16000);}else audio=wav(parts,count,context.sampleRate);current.queued++;
+  const serverRecognition=select.value==='server';
+  const generation=++modeGeneration;const current={context,source,capture,mute,parts:[],samples:0,power:0,quiet:0,queue:Promise.resolve(),queued:0,pendingStop:false,config};job=current;const pauseBuffer=serverRecognition?window.asrUtils.createPauseBuffer(context.sampleRate):null;current.pauseBuffer=pauseBuffer;select.disabled=true;check.disabled=true;
+  function flush(serverChunks){
+   let audio;
+   if(serverRecognition){
+    const chunks=serverChunks||pauseBuffer.flush();if(!chunks)return;
+    audio=chunks.map(pcm=>wav([pcm],pcm.length,16000));
+   }else{
+    const count=current.samples,parts=current.parts,power=current.power;current.parts=[];current.samples=0;current.power=0;current.quiet=0;
+    if(!count||Math.sqrt(power/count)<0.002||count/context.sampleRate<0.25)return;
+    if(useDevice){const mono=new Float32Array(count);let at=0;for(const part of parts){mono.set(part,at);at+=part.length}audio=window.asrUtils.resample(mono,context.sampleRate);}else audio=wav(parts,count,context.sampleRate);
+   }
+   if(current.queued>=2){status.textContent='Motor atrasado. Um trecho não pôde ser processado.';config.gap('Trecho de áudio não processado: Reconhecedor atrasado.');return;}current.queued++;
    current.queue=current.queue.then(async()=>{
-    try{status.textContent=useDevice?'Transcrevendo neste dispositivo…':'Transcrevendo no computador da sala…';config.phase(useParaformer?'Reconhecendo mandarim com Paraformer…':'Reconhecendo com Whisper…');
-     const result=useDevice?await device.transcribe(audio,config.language):await config.transcribe(audio);
-     if(generation!==modeGeneration)return;
-     if(result.text)await config.text(result.text);
-     if(result.discardedSegments)config.gap('Não foi possível reconhecer uma parte da fala com segurança.');
-     status.textContent=`${result.model} · último trecho: ${(result.processingMs/1000).toFixed(1)}s de processamento.`;
-     if(!result.text)config.phase('Ouvindo — nenhum texto reconhecido neste trecho');
-    }catch(error){if(generation!==modeGeneration)return;status.textContent=error.message+' Desligue o microfone para escolher outro motor. O áudio da chamada continua ativo.';if(!current.failed){current.failed=true;await config.gap('Falha no reconhecimento: '+error.message)}}finally{current.queued--}
+    const results=[];let delivered=false;
+    try{
+     status.textContent=useDevice?'Transcrevendo neste dispositivo…':'Transcrevendo no computador da sala…';config.phase(useParaformer?'Reconhecendo mandarim com Paraformer…':'Reconhecendo com Whisper…');
+     for(const chunk of(serverRecognition?audio:[audio])){
+      const result=useDevice?await device.transcribe(chunk,config.language):await config.transcribe(chunk);
+      if(generation!==modeGeneration)return;results.push(result);
+     }
+     const text=results.map(r=>r.text||'').filter(Boolean).join(' ');
+     if(text){delivered=true;await config.text(text);}
+     if(results.some(r=>r.discardedSegments))config.gap('Não foi possível reconhecer uma parte da fala com segurança.');
+     const processing=results.reduce((sum,r)=>sum+(Number(r.processingMs)||0),0);
+     status.textContent=`${results.at(-1)?.model||'Whisper'} · último trecho: ${(processing/1000).toFixed(1)}s de processamento.`;
+     if(!text)config.phase('Ouvindo — nenhum texto reconhecido neste trecho');
+    }catch(error){if(generation!==modeGeneration)return;if(!delivered&&results.some(r=>r.text)){delivered=true;await config.text(results.map(r=>r.text||'').filter(Boolean).join(' '));}status.textContent=error.message+' Desligue o microfone para escolher outro motor. O áudio da chamada continua ativo.';if(!current.failed){current.failed=true;await config.gap('Falha no reconhecimento: '+error.message);}}
+    finally{current.queued--;if(serverRecognition)audio.length=0;}
    });
   }
-  capture.port.onmessage=e=>{if(current.pendingStop||current.failed)return;const part=e.data;current.parts.push(part);current.samples+=part.length;let energy=0;for(const sample of part)energy+=sample*sample;current.power+=energy;current.quiet=Math.sqrt(energy/part.length)<0.003?current.quiet+part.length:0;if((current.samples>=context.sampleRate*(lowLatency?1:2)&&current.quiet>=context.sampleRate*(lowLatency?0.25:0.3))||current.samples>=context.sampleRate*(lowLatency?4:10))flush()};
-  current.flush=flush;source.connect(capture);capture.connect(mute);mute.connect(context.destination);status.textContent=useParaformer?'Paraformer ouvindo. Transcreve nas pausas; trechos de 2 a 10 segundos.':lowLatency?'Transcrição automática ativa. Fale normalmente.':'Whisper ouvindo. Transcreve nas pausas; trechos de 2 a 10 segundos.';
+  capture.port.onmessage=e=>{if(current.pendingStop||current.failed)return;const part=e.data;if(serverRecognition){try{const chunks=pauseBuffer.push(part);if(chunks)flush(chunks);}catch(error){current.failed=true;config.gap(error.message);}return;}current.parts.push(part);current.samples+=part.length;let energy=0;for(const sample of part)energy+=sample*sample;current.power+=energy;current.quiet=Math.sqrt(energy/part.length)<0.003?current.quiet+part.length:0;if((current.samples>=context.sampleRate*2&&current.quiet>=context.sampleRate*.3)||current.samples>=context.sampleRate*10)flush()};
+  current.flush=flush;source.connect(capture);capture.connect(mute);mute.connect(context.destination);status.textContent=useParaformer?'Paraformer ouvindo. Transcreve nas pausas; trechos de 2 a 10 segundos.':serverRecognition?'Transcrição ativa. Aguarda 6 segundos de pausa antes de enviar sua fala.':'Whisper ouvindo. Transcreve nas pausas; trechos de 2 a 10 segundos.';
  }
  async function stop(){const current=job;if(!current)return;job=null;current.pendingStop=true;current.capture.port.onmessage=null;current.source.disconnect();current.capture.disconnect();current.mute.disconnect();await current.context.close();if(current.queued>=2)await current.queue;current.flush();await current.queue;select.disabled=false;check.disabled=false;status.textContent='Reconhecimento parado. Últimos trechos processados.'}
- function abort(){const current=job;if(!current)return;modeGeneration++;job=null;current.pendingStop=true;current.source.disconnect();current.capture.disconnect();current.mute.disconnect();current.context.close().catch(()=>{});select.disabled=false;check.disabled=false;}
+ function abort(){const current=job;if(!current)return;modeGeneration++;job=null;current.pendingStop=true;current.pauseBuffer?.abort();current.source.disconnect();current.capture.disconnect();current.mute.disconnect();current.context.close().catch(()=>{});select.disabled=false;check.disabled=false;}
  window.localASR={configureLanguage,prepare,selected:()=>['local','server','device','paraformer'].includes(select.value),engine:()=>select.value,punctuationEnabled:()=>punctuationToggle.checked,setActive:(active,prepareWhileActive=false)=>{captureActive=active;allowPreparation=prepareWhileActive;syncControls()},start,stop,abort,health,cloudMode(config={}){serverMode=!!config.remoteASR;select.querySelector('option[value=server]').hidden=!serverMode;select.value=serverMode?'server':'browser';for(const option of select.children)if(option.value==='local')option.hidden=true;punctuationToggle.checked=false;punctuationLabel.hidden=true;punctuationStatus.textContent=serverMode?'A pontuação reconhecida pelo Whisper é preservada.':'A pontuação nativa do navegador é preservada. A camada Python está disponível apenas no localhost.';status.textContent='Whisper no dispositivo disponível após preparação. O reconhecimento do navegador continua como alternativa.';if(privacy)privacy.textContent='O provedor do navegador pode receber áudio. O texto é criptografado no dispositivo antes do envio ao banco.'}};
 })();

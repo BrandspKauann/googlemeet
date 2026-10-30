@@ -1,11 +1,14 @@
 # Câmera com beleza em segundo plano
 
-O fluxo combinado usa `MediaStreamTrackProcessor` (buffer de um quadro), streams
-transferidos para um Worker clássico, OffscreenCanvas/WebGL e
-`MediaStreamTrackGenerator`. A câmera enviada não depende de vídeo HTML,
-`requestAnimationFrame`, `setInterval` ou visibilidade da página. Não há troca
-para o vídeo original ao mudar de aba. GPUPixel e OpenMakeup continuam combinados,
-com dois rastreadores faciais na CPU e os mesmos controles/padrão Porcelana.
+O fluxo combinado usa `MediaStreamTrackProcessor` (buffer de um quadro),
+transferência explícita de `VideoFrame` para um Worker clássico,
+OffscreenCanvas/WebGL e `MediaStreamTrackGenerator`. Cada quadro de entrada
+é liberado depois de usado, e cada saída recebe confirmação de escrita.
+Há no máximo uma entrada e uma saída em trânsito. A geração dos quadros não
+usa timers de animação; a suspensão da página/processo ainda pode interromper
+as mensagens. GPUPixel e OpenMakeup continuam combinados, com os mesmos
+controles e padrão Porcelana. O filtro executa no dispositivo da câmera;
+Whisper e tradução executam no servidor Docker, em fluxos independentes.
 
 O Worker é gerado por `npm run build` em `dist/openmakeup/worker.js`.
 É clássico porque o carregador WASM do MediaPipe usa `importScripts`.
@@ -67,3 +70,24 @@ CUDA no Docker e tradução recebida no aluno. O teste usou renderização gráf
 por software no Chrome headless, não reproduz todos os drivers/dispositivos reais.
 A causa específica do travamento relatado pelo usuário não foi capturada em logs;
 a correção reduz a carga e cobre a falta de recuperação quando os quadros param.
+
+
+## Transferência explícita e validação de movimento (30/10/2026)
+
+O transporte anterior transferia os streams do processador/gerador. O novo
+protocolo transfere cada `VideoFrame` com lista de transferência e confirma
+consumo antes de avançar. Isso evita depender da clonagem/otimização de streams
+na implementação do navegador e evita reter buffers da câmera. A saída usa
+pixels RGBA próprios, sem compartilhar uma superfície WebGL mutável com o envio.
+O relógio de saída é monotônico e independente dos timestamps da câmera.
+
+Teste com `MediaStreamTrackProcessor` instrumentado para produzir frames com
+timestamp constante: antes, o receptor mostrava somente uma imagem diferente
+em oito amostras; agora mostra oito, com o efeito ainda ativo, tanto com o
+painel aberto como fechado. O mesmo teste sem alteração de timestamps também
+passou. Chrome headless foi configurado com ANGLE Direct3D11 e reportou a
+RTX 3050 como renderizador; não foi só contagem de pacotes/quadros.
+
+Não houve captura de logs da câmera real do usuário; isso comprova a regressão
+simulada e sua correção, não todos os drivers possíveis. O teste CDP de 16/10
+acima descreve a arquitetura antiga e não valida suspensão do novo transporte.
