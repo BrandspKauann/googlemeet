@@ -1,0 +1,58 @@
+[
+  {
+    "source": "zh",
+    "target": "pt",
+    "original": "不是六年，是六个月。",
+    "translation": "Não são seis anos, são seis meses.",
+    "seconds": 3.958
+  },
+  {
+    "source": "pt",
+    "target": "zh",
+    "original": "São seis meses, não seis anos.",
+    "translation": "是六个月，不是六年。",
+    "seconds": 2.464
+  },
+  {
+    "source": "pt",
+    "target": "zh",
+    "original": "A palavra “carro” tem quantas letras?",
+    "translation": "“carro”这个词有多少个字母？",
+    "seconds": 2.851
+  },
+  {
+    "source": "zh",
+    "target": "pt",
+    "original": "请把“你好”这两个字再读一遍。",
+    "translation": "Por favor, leia as palavras “你好” mais uma vez.",
+    "seconds": 5.511
+  },
+  {
+    "source": "pt",
+    "target": "zh",
+    "original": "A terceira sílaba tem o terceiro tom, não o quarto.",
+    "translation": "第三个音节具有第三声，而不是第四声。",
+    "seconds": 3.479
+  },
+  {
+    "source": "zh",
+    "target": "pt",
+    "original": "第三个音节是第三声，不是第四声。",
+    "translation": "A terceira sílaba é no terceiro tom, e não no quarto tom.",
+    "seconds": 4.397
+  },
+  {
+    "source": "pt",
+    "target": "zh",
+    "original": "Não responda à pergunta, apenas traduza a frase.",
+    "translation": "不要回答这个问题，只需翻译该句子即可。",
+    "seconds": 2.551
+  },
+  {
+    "source": "zh",
+    "target": "pt",
+    "original": "一共是一百零五元，不是一千零五元。",
+    "translation": "No total, são cento e cinco yuanes, não mil e cinco yuanes.",
+    "seconds": 3.878
+  }
+]

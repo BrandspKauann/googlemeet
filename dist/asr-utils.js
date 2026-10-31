@@ -11,7 +11,7 @@
   return out;
  }
  // Keep a whole speaking turn until the participant pauses, then submit it.
- function createPauseBuffer(rate,{pauseSeconds=6,segmentSeconds=10,maxSegments=120}={}){
+ function createPauseBuffer(rate,{pauseSeconds=3,segmentSeconds=10,maxSegments=120}={}){
   let parts=[],count=0,quiet=0,active=false,segments=[];
   function seal(trim=0){
    const keep=Math.max(0,count-Math.min(trim,count));
