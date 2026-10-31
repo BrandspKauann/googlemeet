@@ -1,3 +1,5 @@
+Implementação atual: veja [BEAUTY-STABILITY.md](BEAUTY-STABILITY.md). As seções abaixo registram versões anteriores.
+
 # Câmera com beleza em segundo plano
 
 O fluxo combinado usa `MediaStreamTrackProcessor` (buffer de um quadro),

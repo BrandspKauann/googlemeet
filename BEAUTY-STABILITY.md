@@ -1,47 +1,53 @@
-# Saída nativa da câmera com filtro — 31/10/2026
+# Reinstalação e reconstrução do filtro — 31/10/2026
 
-O usuário confirmou congelamento completo com o filtro ligado e recuperação ao
-desligá-lo. A alteração anterior, que melhorava a fluidez em testes sintéticos,
-não resolveu esse relato. O congelamento completo no dispositivo do usuário
-ainda não foi reproduzido no ambiente de teste.
+O usuário relatou que a câmera congela ao ativar o filtro e volta ao desativá-lo.
+As correções anteriores não resolveram esse relato. A câmera real do usuário
+não foi acessada; os testes abaixo usam câmera sintética em Chrome descartável.
 
-## Alteração atual
+## Integração atual
 
-- Removido o limite de 20 fps e excluído o agendador de descarte de quadros.
-- Removidos os limites fixos de FPS dos caminhos compatíveis e do desfoque.
-- A saída principal usa `HTMLCanvasElement.captureStream()` sem argumento de
- taxa de quadros, com captura solicitada a cada imagem concluída.
-- O Worker devolve buffers RGBA próprios. Não há `MediaStreamTrackGenerator`
- nem timestamps sintéticos na saída do filtro de beleza.
-- O navegador administra a captura e o relógio do vídeo enviado ao WebRTC.
-- O monitor observa tanto novas imagens renderizadas quanto quadros realmente
- capturados no track de saída. Se qualquer etapa parar, restaura a câmera
- original e informa a interrupção do efeito.
-- Os efeitos combinados, Porcelana automático, rastreamento facial separado e
- download/cache do modelo no navegador permanecem ativos.
+`Vídeo nativo da câmera → cópia RGBA própria → Worker de efeitos → canvas nativo → WebRTC`
 
-A taxa efetiva depende da câmera, do navegador e do tempo de processamento.
-Não existe mais um teto fixo de FPS definido pelo filtro. A resolução de
-processamento ainda se ajusta em caso de sobrecarga; isso não é um limite de FPS.
-Nenhum vídeo da câmera é enviado ao servidor de transcrição/tradução.
+O módulo anterior `worker-beauty.js` foi removido. A nova captura está em
+`dist/beauty-runtime.js`. Não usa TrackProcessor, TrackGenerator nem VideoFrame,
+nem envia buffers físicos da câmera entre threads. O vídeo nativo fornece cópias
+de pixels; há no máximo uma entrada pendente, sem teto fixo de FPS. O mesmo
+rastreador facial continua compartilhado pelos dois efeitos combinados.
 
-## Verificações
+OpenMakeupSDK, GPUPixel, Porcelana automático e controles foram preservados.
+As dependências foram reinstaladas com `npm ci --ignore-scripts --prefer-online`
+e os arquivos do navegador foram reconstruídos. Transcrição e tradução no
+Docker não foram alteradas.
 
-Chrome com NVIDIA D3D11 e câmera sintética móvel de 24 fps: saída acompanhando
-aproximadamente 24 fps. Sala local com professora e aluno, vídeo recebido por
-WebRTC: oito imagens distintas em oito amostras com ajustes abertos, fechados,
-a aba do aluno ativa e após desligar/religar o filtro. O teste também forçou
-timestamps repetidos na entrada da câmera.
+## Limpeza e instalação no navegador
 
-Ao interromper deliberadamente o Worker, a câmera original voltou em 2.537 ms
-e manteve movimento. O aviso de VideoFrame no console nessa interrupção forçada
-é esperado; o encerramento normal libera os quadros antes de terminar o Worker.
+- Cache novo: `aula-beauty-resources-20261031-reinstall1`.
+- Na primeira preparação, apaga apenas caches antigos `aula-beauty-resources-*`.
+- Baixa novamente os arquivos com `cache: reload` e verifica tamanho e SHA-256.
+- Reutiliza a instalação verificada; repara arquivos ausentes ou corrompidos.
+- O botão **Reinstalar filtro** encerra o efeito, mantém a câmera original,
+  limpa os recursos do filtro, baixa novamente e reaplica as intensidades atuais.
+- Não apaga contas, IndexedDB, transcrições, chaves de acesso ou outros caches.
 
-65 testes Node passaram. Os testes novos verificam captura sem argumento de
-FPS, entrega de todos os quadros de saída, acompanhamento de todos os callbacks
-de vídeo no modo compatível e recuperação se a captura parar mesmo com o Worker
-continuando a produzir pixels. Essas verificações não substituem a confirmação
-no equipamento em que o usuário observou o congelamento.
+A instalação nova ocorre ao abrir a câmera na página atualizada. Não pode
+alterar o código de uma aba antiga que o usuário ainda não recarregou.
 
-Câmera e filtro executam no navegador do participante. Whisper e tradução
-executam no servidor Docker, sem alteração nesta entrega.
+## Evidências
+
+65 testes Node passaram, incluindo migração de cache, hash, corrupção,
+reinstalação, transporte de pixels próprios e encerramento sem parar a câmera
+original. Teste real de navegador com cache antigo semeado:
+
+- 120 requisições de recursos pesados na instalação nova.
+- 120 novamente ao clicar em Reinstalar filtro.
+- Zero downloads repetidos após recarregar e reutilizar a instalação verificada.
+- Cache privado não relacionado preservado; intensidade personalizada preservada.
+- Imagem em movimento antes e depois da reinstalação.
+
+Sala local com professora e aluno: oito imagens distintas em oito amostras com
+ajustes abertos, fechados, aba do aluno ativa e após desligar/religar o filtro.
+Ao interromper deliberadamente o Worker, voltou à câmera original em 2.965 ms,
+com movimento. Não houve aviso de VideoFrame retido nessa versão.
+
+Essas medições não confirmam o resultado em todos os drivers. É necessário
+retestar no equipamento em que o congelamento foi relatado.

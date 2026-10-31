@@ -15,24 +15,24 @@ TextureLoader.prototype.load=function(url,onLoad,onProgress,onError){
   pending.catch(error=>onError?.(error));textures.push(pending);return texture;
 };
 const channel=createFrameChannel(self);
-let values,stopped=false,reader,writer,skin,mesh,tracking,sdk;
+let values,stopped=false,reader,writer,skin,mesh,tracking,sdk,inputTimer;
 onmessage=({data})=>{
   if(data.type==='stop'){dispose();return;}
   if(data.type==='input'){channel.push(data.frame);return;}
+  if(data.type==='input-wait'){clearTimeout(inputTimer);inputTimer=setTimeout(()=>{if(!stopped)postMessage({type:'request-input'});},0);return;}
   if(data.type==='output-consumed'){channel.consumed();return;}
   if(data.type==='values'){values=data.values;return;}
   if(data.type==='start')run({readable:channel.readable,writable:channel.writable,values:data.values}).catch(error=>{if(!stopped)postMessage({type:'error',message:error.message||String(error)});dispose();}).finally(()=>postMessage({type:'stopped'}));
 };
-function dispose(){if(stopped)return;stopped=true;channel.abort();reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});tracking?.terminate();mesh?.close();skin?.dispose();sdk?.dispose();}
+function dispose(){if(stopped)return;stopped=true;clearTimeout(inputTimer);channel.abort();reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});tracking?.terminate();mesh?.close();skin?.dispose();sdk?.dispose();}
 async function run({readable,writable,values:initial}){
   const {cachedFetch}=await import('/beauty-cache.js');self.fetch=cachedFetch;
-  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js?v=20261031-smooth1')]);
+  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js?v=20261031-reinstall1')]);
   values=initial;reader=readable.getReader();writer=writable.getWriter();
   const first=await reader.read();if(first.done)throw Error('A câmera foi encerrada.');
-  const ratio=Math.min(1,640/first.value.displayWidth,480/first.value.displayHeight);
-  let w=Math.max(2,Math.round(first.value.displayWidth*ratio)),h=Math.max(2,Math.round(first.value.displayHeight*ratio));
-  first.value.close();channel.release();
+  let w=first.value.width,h=first.value.height;channel.release();
   const input=new OffscreenCanvas(w,h),ctx=input.getContext('2d');
+  const received=new OffscreenCanvas(w,h),receive=received.getContext('2d',{alpha:false});
   const softened=new OffscreenCanvas(w,h),output=new OffscreenCanvas(w,h);
   const owned=new OffscreenCanvas(w,h),readback=owned.getContext('2d',{willReadFrequently:true});
   skin=new Renderer(softened);await skin.ready;
@@ -42,7 +42,7 @@ async function run({readable,writable,values:initial}){
   // serve both skin/reshape and makeup.
   mesh=new FaceMesh({delegate:'CPU'});
   let trackingError,trackingBusy=false,landmarks,hasFace=false;
-  tracking=new Worker('/openmakeup/tracker.js?v=20261031-smooth1');
+  tracking=new Worker('/openmakeup/tracker.js?v=20261031-reinstall1');
   await new Promise((resolve,reject)=>{
     const fail=message=>{trackingError=Error(message);reject(trackingError);};
     tracking.onerror=event=>fail(event.message||'O rastreamento facial foi interrompido.');
@@ -90,13 +90,14 @@ async function run({readable,writable,values:initial}){
   while(!stopped){
     const {done,value:frame}=await reader.read();if(done){if(!stopped)throw Error('O filtro deixou de receber imagens da câmera.');break;}
     let released=false;const inputTimestamp=frame.timestamp;
-    const release=()=>{if(!released){released=true;frame.close();channel.release();}};
+    const release=()=>{if(!released){released=true;channel.release();}};
     try{
       if(trackingError)throw trackingError;
       const now=performance.now();
-      ctx.drawImage(frame,0,0,w,h);
-      // Release the physical camera buffer before inference, GPU readback or
-      // output backpressure. Slow rendering must not starve the source camera.
+      if(received.width!==frame.width||received.height!==frame.height){received.width=frame.width;received.height=frame.height;}
+      receive.putImageData(new ImageData(frame.pixels,frame.width,frame.height),0,0);ctx.drawImage(received,0,0,w,h);
+      // Release this owned pixel input slot before inference or output waits.
+      // No physical camera frame is retained by the filter.
       release();
       if(!trackingBusy&&now-lastDetection>=200){
         trackingBusy=true;lastDetection=now;

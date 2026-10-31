@@ -5,7 +5,7 @@ self.onmessage=async({data})=>{
  if(data.type==='start'){
   try{
    const {cachedFetch}=await import('/beauty-cache.js');self.fetch=cachedFetch;
-   const {FaceMesh}=await import('/face-tracking/facemesh.js?v=20261031-smooth1');
+   const {FaceMesh}=await import('/face-tracking/facemesh.js?v=20261031-reinstall1');
    tracker=new FaceMesh({delegate:'CPU'});
    if(await tracker.load()!=='ready')throw Error('Não foi possível preparar o rastreamento facial.');
    if(!stopped)postMessage({type:'ready'});

@@ -21,4 +21,4 @@ const files=fs.readdirSync('dist/openmakeup/assets',{recursive:true}).filter(fil
 files.push('/openmakeup/runtime/v1/vision_bundle.mjs');
 for(const name of fs.readdirSync('dist/openmakeup/runtime/v1/wasm'))files.push('/openmakeup/runtime/v1/wasm/'+name);
 for(const name of ['gray','origin','skin','light'])files.push('/gpupixel/lookup_'+name+'.png');
-fs.writeFileSync('dist/openmakeup/download.json',JSON.stringify(files));
+fs.writeFileSync('dist/openmakeup/download.json',JSON.stringify({version:'20261031-reinstall1',files:files.map(url=>{const bytes=fs.readFileSync('dist'+url);return {url,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};})}));
