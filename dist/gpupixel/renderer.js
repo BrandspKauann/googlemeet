@@ -26,9 +26,9 @@ export function gpupixelPoints(points){
   }return out;
 }
 export class Renderer{
-  constructor(canvas){
+  constructor(canvas,{capture=false}={}){
     this.canvas=canvas;this.targets=[];this.programs=[];this.textures=[];this.disposed=false;
-    const gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false});
+    const gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:capture});
     if(!gl)throw Error('WebGL2 indisponível neste navegador.');this.gl=gl;
     try{
       this.copy=this.program(VERT,COPY);this.blur=this.program(VERT,BLUR);this.diff=this.program(VERT,DIFF);this.reshape=this.program(VERT,RESHAPE_FRAGMENT);this.beauty=this.program(BEAUTY_VERTEX,BEAUTY_FRAGMENT);

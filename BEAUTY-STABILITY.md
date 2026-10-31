@@ -1,53 +1,48 @@
-# Reinstalação e reconstrução do filtro — 31/10/2026
+# Restauração do renderizador anterior — 31/10/2026
 
-O usuário relatou que a câmera congela ao ativar o filtro e volta ao desativá-lo.
-As correções anteriores não resolveram esse relato. A câmera real do usuário
-não foi acessada; os testes abaixo usam câmera sintética em Chrome descartável.
+O usuário confirmou que as tentativas com processamento de vídeo em Worker
+continuavam congelando a câmera. O caminho ativo foi revertido para a integração
+DOM anterior ao commit 6830757: vídeo da câmera → canvas GPUPixel → vídeo
+intermediário → canvas OpenMakeupSDK → WebRTC. Não há transporte de imagens em
+Worker, TrackProcessor ou TrackGenerator no filtro de beleza. O pequeno Worker
+beauty-clock.js só agenda chamadas de desenho quando a página está oculta.
 
-## Integração atual
+Preservados: efeitos combinados, Porcelana automático, intensidades ajustáveis,
+reinstalação de recursos com hash e cache, controles do fundo borrado e câmera
+original durante a preparação. Não foi reintroduzido o antigo teto de 24 fps.
+Transcrição, tradução e Docker não foram alterados.
 
-`Vídeo nativo da câmera → cópia RGBA própria → Worker de efeitos → canvas nativo → WebRTC`
+## Debug e correções adicionais
 
-O módulo anterior `worker-beauty.js` foi removido. A nova captura está em
-`dist/beauty-runtime.js`. Não usa TrackProcessor, TrackGenerator nem VideoFrame,
-nem envia buffers físicos da câmera entre threads. O vídeo nativo fornece cópias
-de pixels; há no máximo uma entrada pendente, sem teto fixo de FPS. O mesmo
-rastreador facial continua compartilhado pelos dois efeitos combinados.
+A versão publicada c874eb8 não concluía a preparação em um teste que mantinha
+HTMLMediaElement.currentTime constante enquanto a câmera seguia entregando
+imagens. Esse bloqueio foi reproduzido antes da alteração. Isso demonstra uma
+falha no controle de avanço; não prova que o dispositivo do usuário apresente
+exatamente a mesma condição.
 
-OpenMakeupSDK, GPUPixel, Porcelana automático e controles foram preservados.
-As dependências foram reinstaladas com `npm ci --ignore-scripts --prefer-online`
-e os arquivos do navegador foram reconstruídos. Transcrição e tradução no
-Docker não foram alteradas.
+O renderer restaurado não descarta imagens por igualdade de currentTime.
+Os callbacks de vídeo acionam cada desenho; o repaint recupera callbacks
+interrompidos, e um relógio leve com confirmação mantém o agendamento oculto.
+A textura do SDK é atualizada explicitamente a cada desenho. Os contextos
+WebGL preservam o buffer destinado à captura e solicitam a captura após renderizar.
 
-## Limpeza e instalação no navegador
+Diagnóstico local em **Copiar diagnóstico**: versão, GPU, resolução, FPS
+informado pela câmera, contagens de desenhos e de imagens decodificadas em cada
+etapa, horários de atualização e mensagem de erro. Não contém imagens, áudio,
+conta, transcrição, deviceId ou groupId; não é enviado automaticamente ao servidor.
 
-- Cache novo: `aula-beauty-resources-20261031-reinstall1`.
-- Na primeira preparação, apaga apenas caches antigos `aula-beauty-resources-*`.
-- Baixa novamente os arquivos com `cache: reload` e verifica tamanho e SHA-256.
-- Reutiliza a instalação verificada; repara arquivos ausentes ou corrompidos.
-- O botão **Reinstalar filtro** encerra o efeito, mantém a câmera original,
-  limpa os recursos do filtro, baixa novamente e reaplica as intensidades atuais.
-- Não apaga contas, IndexedDB, transcrições, chaves de acesso ou outros caches.
+## Verificações
 
-A instalação nova ocorre ao abrir a câmera na página atualizada. Não pode
-alterar o código de uma aba antiga que o usuário ainda não recarregou.
+- 63 testes Node passaram, incluindo fonte com relógio em zero, callback nativo
+  sem resposta, agendamento oculto, cancelamento e etapa de renderização parada.
+- Chrome descartável, câmera sintética de 24 fps, relógio currentTime fixo:
+  oito imagens distintas em oito amostras e aproximadamente 23,9 fps.
+- Sala local, professora/aluno por WebRTC: oito imagens distintas em oito amostras
+  com painel aberto, fechado, troca de aba, reativação e fundo borrado combinado.
+- Botão de diagnóstico validado com clipboard simulado, sem alterar o clipboard real.
+- Reinstalação e reutilização do cache verificadas com a integração restaurada.
 
-## Evidências
-
-65 testes Node passaram, incluindo migração de cache, hash, corrupção,
-reinstalação, transporte de pixels próprios e encerramento sem parar a câmera
-original. Teste real de navegador com cache antigo semeado:
-
-- 120 requisições de recursos pesados na instalação nova.
-- 120 novamente ao clicar em Reinstalar filtro.
-- Zero downloads repetidos após recarregar e reutilizar a instalação verificada.
-- Cache privado não relacionado preservado; intensidade personalizada preservada.
-- Imagem em movimento antes e depois da reinstalação.
-
-Sala local com professora e aluno: oito imagens distintas em oito amostras com
-ajustes abertos, fechados, aba do aluno ativa e após desligar/religar o filtro.
-Ao interromper deliberadamente o Worker, voltou à câmera original em 2.965 ms,
-com movimento. Não houve aviso de VideoFrame retido nessa versão.
-
-Essas medições não confirmam o resultado em todos os drivers. É necessário
-retestar no equipamento em que o congelamento foi relatado.
+O Chrome headless manteve visibilityState como visible mesmo após trocar de
+alvo e solicitar minimização; portanto isso não valida uma janela realmente
+minimizada. O caminho de agendamento oculto foi coberto por teste unitário. A câmera
+real do usuário não foi acessada, e ainda é preciso confirmar o resultado nela.

@@ -2,14 +2,15 @@ import {OpenMakeup} from 'open-makeup-sdk';
 import {PlaneGeometry} from 'three';
 
 // Adapt the SDK to the existing call: never request or stop a second camera.
-export async function createOpenMakeup(input, getValues, onStatus, onError, cancelled) {
+export async function createOpenMakeup(input, getValues, onStatus, onError, cancelled, onFrame=()=>{}) {
   const {FaceMesh}=await import('/face-tracking/facemesh.js');
   const tracker=new FaceMesh();
   const source=document.createElement('video');source.muted=true;source.playsInline=true;source.srcObject=input;
   const canvas=document.createElement('canvas');
-  let sdk,output,stopFrames,disposed=false,lastTime=-1,lastDetection=0,hasFace=false;
+  let sdk,output,stopFrames,disposed=false,lastDetection=0,hasFace=false;
   const stop=()=>{if(disposed)return;disposed=true;stopFrames?.();output?.getTracks().forEach(t=>t.stop());sdk?.engine.scene?.traverse(object=>{object.geometry?.dispose();for(const mat of [object.material].flat().filter(Boolean)){for(const uniform of Object.values(mat.uniforms||{}))if(uniform.value?.isTexture)uniform.value.dispose();mat.map?.dispose();mat.dispose();}});sdk?.dispose();sdk?.engine.videoTexture?.dispose();sdk?.engine.renderer?.forceContextLoss();tracker.close();source.pause();source.srcObject=null;};
   try {
+    if(!canvas.getContext('webgl2',{alpha:true,antialias:true,preserveDrawingBuffer:true}))throw Error('WebGL2 indisponível neste navegador.');
     await source.play();
     if(await tracker.load()!=='ready')throw Error('Não foi possível preparar o rastreamento do OpenMakeup.');
     if(cancelled()){stop();return null;}
@@ -45,8 +46,7 @@ export async function createOpenMakeup(input, getValues, onStatus, onError, canc
     await sdk.apply('lipstick',{color:'#a54b61',finish:'matte'});
     // Never leave a face-shaped patch when no face is present.
     const draw=()=>{
-      if(disposed||source.readyState<2||source.currentTime===lastTime)return;
-      lastTime=source.currentTime;
+      if(disposed||source.readyState<2)return;
       const now=performance.now();
       if(now-lastDetection>=100){
         const result=tracker.landmarker.detectForVideo(source,now);
@@ -60,7 +60,8 @@ export async function createOpenMakeup(input, getValues, onStatus, onError, canc
       engine.lipsMat.uniforms.aulaIntensity.value=values.lipstick/100;
       sdk.setMorph('noseSlim',values.nose/100*.35);
       if(engine.renderer.getContext().isContextLost())throw Error('A aceleração de vídeo foi interrompida.');
-      engine.renderer.render(engine.scene,engine.camera3D);
+      engine.videoTexture.needsUpdate=true;engine.renderer.render(engine.scene,engine.camera3D);
+      output?.getVideoTracks()[0].requestFrame?.();onFrame(source);
       onStatus(hasFace?'Efeito ativo. OpenMakeupSDK aplicado à câmera enviada ao aluno.':'Efeito pronto. Aproxime o rosto da câmera para aplicar os ajustes.');
     };
     if(cancelled()){stop();return null;}
