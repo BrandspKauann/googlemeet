@@ -97,7 +97,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.authorized():
             if self.path == '/translation/health':
-                return self.respond(TRANSLATION.state if TRANSLATION else {
+                return self.respond(TRANSLATION.health() if TRANSLATION else {
                     'ready': False, 'error': 'Tradução não configurada.'})
             self.respond(STATE if self.path == '/health' else {'error': 'Rota inválida.'},
                          200 if self.path == '/health' else 404)

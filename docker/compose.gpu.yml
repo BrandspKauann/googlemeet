@@ -7,8 +7,25 @@ services:
     gpus: all
     environment:
       ASR_MODEL: ${ASR_MODEL:-large-v3}
+      TRANSLATION_HY_URL: http://translator:8080
       ASR_DEVICE: cuda
       ASR_COMPUTE_TYPE: int8_float16
       ASR_BEAM_SIZE: 3
       ASR_CPU_THREADS: 4
     mem_limit: 6g
+
+  translator:
+    logging:
+      driver: none
+    image: ghcr.io/ggml-org/llama.cpp@sha256:b32890309c1a33a534a01b0b461e953dc2c5a6bac20213abcf48e22847a19c85
+    restart: unless-stopped
+    command: ["-m", "/models/model.gguf", "--host", "0.0.0.0", "--port", "8080", "-c", "4096", "-t", "4", "-ngl", "0", "--parallel", "1"]
+    environment:
+      LLAMA_API_KEY: ${ASR_SECRET:?Defina ASR_SECRET}
+    volumes:
+      - ../data/models/hy-mt2-1.8b-q8.gguf:/models/model.gguf:ro
+    mem_limit: 3g
+    cpus: 4
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m

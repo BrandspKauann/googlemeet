@@ -1,0 +1,44 @@
+[
+  {
+    "source": "zh",
+    "target": "pt",
+    "text": "所以其实就半年。",
+    "translation": "Então, na verdade, é apenas meio ano.",
+    "seconds": 1.001
+  },
+  {
+    "source": "zh",
+    "target": "pt",
+    "text": "请把这个词再读一遍。",
+    "translation": "Por favor, leia essa palavra mais uma vez.",
+    "seconds": 1.108
+  },
+  {
+    "source": "zh",
+    "target": "pt",
+    "text": "不是六年，是六个月。",
+    "translation": "Não são seis anos, são seis meses.",
+    "seconds": 1.058
+  },
+  {
+    "source": "pt",
+    "target": "zh",
+    "text": "São seis meses, não seis anos.",
+    "translation": "是六个月，不是六年。",
+    "seconds": 0.85
+  },
+  {
+    "source": "pt",
+    "target": "zh",
+    "text": "A palavra “carro” tem quantas letras?",
+    "translation": "“carro”这个词有多少个字母？",
+    "seconds": 0.871
+  },
+  {
+    "source": "pt",
+    "target": "zh",
+    "text": "Você consegue ouvir minha voz? Compartilhe sua tela, por favor.",
+    "translation": "你能听到我的声音吗？请分享你的屏幕画面吧。",
+    "seconds": 1.371
+  }
+]

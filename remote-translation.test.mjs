@@ -78,3 +78,9 @@ test('recognition gaps remain in history without replacing speech captions or ca
  s.context.records.set('gap',gap);await s.context.queueTranslation(gap);
  assert.equal(s.captions.length,captionCount);assert.equal(s.requests.length,requestCount);assert.match(gap.node.textContent,/Interrupção/);
 });
+
+
+test('long Chinese translation is split into bounded requests and rejoined',async()=>{
+ const s=setup();const tr=await s.context.getTranslator('pt','zh');await tr.translate('Uma frase de aula para tradução. '.repeat(20));
+ assert.ok(s.requests.length>1);assert.ok(s.requests.every(r=>r.body.text.length<=160));
+});

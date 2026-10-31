@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Recursos do filtro prontos neste navegador.':'美颜资源已在此浏览器中准备就绪。',
     'Microfone ligado. As legendas chegam após 6 segundos de pausa.':'麦克风已开启，停顿六秒后将显示字幕。',
     'Transcrição ativa. Aguarda 6 segundos de pausa antes de enviar sua fala.':'转写已启用，将在您停顿六秒后提交语音。',
     'O filtro parou de atualizar a câmera. Sua câmera continua sem efeito.':'美颜画面更新已中断，摄像头已恢复为原始画面。','O filtro deixou de receber imagens da câmera. Sua câmera continua sem efeito.':'美颜未能继续接收摄像头画面，摄像头已恢复为原始画面。',

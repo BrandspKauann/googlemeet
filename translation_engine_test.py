@@ -10,6 +10,19 @@ import translation_engine as engine
 
 
 class TranslationTests(unittest.TestCase):
+    def test_chinese_uses_authenticated_direct_translation(self):
+        import io
+        with patch.dict('os.environ', {'TRANSLATION_HY_URL':'http://translator:8080','ASR_SECRET':'unit-secret'}):
+            model=engine.TranslationEngine()
+        model.state['ready']=True
+        response={'choices':[{'finish_reason':'stop','message':{'content':'Seis meses.'}}]}
+        with patch.object(engine.urllib.request,'urlopen',return_value=io.BytesIO(json.dumps(response).encode())) as request:
+            self.assertEqual(model.translate('半年。','zh','pt'),'Seis meses.')
+            self.assertEqual(request.call_args[0][0].get_header('Authorization'),'Bearer unit-secret')
+        response['choices'][0]['finish_reason']='length'
+        with patch.object(engine.urllib.request,'urlopen',return_value=io.BytesIO(json.dumps(response).encode())):
+            with self.assertRaises(RuntimeError):model.translate('半年。','zh','pt')
+
     def test_routes_cover_supported_languages_and_reject_unknowns(self):
         self.assertEqual(engine.route('zh', 'pt'), [('zh', 'en'), ('en', 'pt')])
         self.assertEqual(engine.route('es', 'en'), [('es', 'en')])

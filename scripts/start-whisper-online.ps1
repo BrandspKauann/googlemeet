@@ -15,7 +15,7 @@ if(!(Test-Path -LiteralPath $configPath)){
 }
 $env:ASR_MODEL=$Model
 $composeArgs=@('compose','--env-file',$configPath,'-f','docker/compose.whisper.yml')
-if($Device -eq 'cuda'){$composeArgs+=@('-f','docker/compose.gpu.yml')}
+if($Device -eq 'cuda'){python scripts/prepare-hy-model.py;if($LASTEXITCODE -ne 0){throw 'Não foi possível preparar o tradutor.'};$composeArgs+=@('-f','docker/compose.gpu.yml')}
 docker @composeArgs --profile quick up -d --build
 if($LASTEXITCODE -ne 0){throw 'Não foi possível iniciar o Docker do reconhecimento.'}
 $endpoint=$null

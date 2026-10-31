@@ -151,7 +151,9 @@ class Pair:
 
 class TranslationEngine:
     def __init__(self):
-        self.state = dict(ready=False, model=MODEL_LABEL, languages=list(LANGUAGES), error=None)
+        self.hy_url = os.environ.get('TRANSLATION_HY_URL', '').rstrip('/')
+        self.hy_secret = os.environ.get('ASR_SECRET', '')
+        self.state = dict(ready=False, model=('Hy-MT2-1.8B / Argos' if self.hy_url else MODEL_LABEL), languages=list(LANGUAGES), error=None)
         self.pairs = {}
 
     def prepare(self):
@@ -169,15 +171,49 @@ class TranslationEngine:
                     raise RuntimeError('A validação do modelo falhou.')
                 self.pairs[(spec['source'], spec['target'])] = pair
                 print('Tradução preparada: ' + spec['source'] + ' → ' + spec['target'], flush=True)
+            if self.hy_url:
+                import time
+                for attempt in range(120):
+                    try:
+                        self.hy_translate('你好。', 'pt')
+                        break
+                    except Exception:
+                        if attempt == 119: raise
+                        time.sleep(1)
             self.state['ready'] = True
         except Exception as error:
             self.state['error'] = type(error).__name__
             print('Falha ao preparar tradução: ' + type(error).__name__, flush=True)
 
+    def health(self):
+        if self.hy_url and self.state['ready']:
+            try:
+                req=urllib.request.Request(self.hy_url+'/health',headers={'Authorization':'Bearer '+self.hy_secret})
+                with urllib.request.urlopen(req,timeout=2) as response:
+                    if json.load(response).get('status')!='ok': raise RuntimeError()
+            except Exception:
+                return dict(self.state,ready=False,error='Tradutor de chinês indisponível.')
+        return self.state
+
+    def hy_translate(self, text, target):
+        names = {'pt':'Portuguese','zh':'Chinese','en':'English','es':'Spanish'}
+        prompt = 'Translate the following text into '+names[target]+'. Only output the translated result without explanation:\n\n'+text
+        body = json.dumps({'messages':[{'role':'user','content':prompt}], 'max_tokens':768, 'temperature':0}).encode()
+        request = urllib.request.Request(self.hy_url+'/v1/chat/completions',data=body,headers={'Content-Type':'application/json','Authorization':'Bearer '+self.hy_secret})
+        with urllib.request.urlopen(request,timeout=18) as response:
+            result=json.load(response)
+        choice=result['choices'][0]
+        if choice.get('finish_reason')!='stop': raise RuntimeError('Tradução incompleta.')
+        translated=choice['message']['content'].strip()
+        if not translated or len(translated)>8000: raise RuntimeError('Tradução inválida.')
+        return translated
+
     def translate(self, text, source, target):
         validate_request(text, source, target)
         if not self.state['ready']:
             raise RuntimeError('Tradução indisponível.')
+        if self.hy_url and source!=target and 'zh' in (source,target):
+            return self.hy_translate(text,target)
         result = text
         for pair in route(source, target):
             result = self.pairs[pair].translate(result)

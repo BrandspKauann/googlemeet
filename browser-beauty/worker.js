@@ -27,7 +27,7 @@ onmessage=({data})=>{
 function dispose(){if(stopped)return;stopped=true;channel.abort();reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});mesh?.close();makeupMesh?.close();skin?.dispose();sdk?.dispose();}
 async function run({readable,writable,values:initial}){
   const {cachedFetch}=await import('/beauty-cache.js');self.fetch=cachedFetch;
-  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js?v=20261028-stable1')]);
+  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js?v=20261030-auto1')]);
   values=initial;reader=readable.getReader();writer=writable.getWriter();
   const first=await reader.read();if(first.done)throw Error('A câmera foi encerrada.');
   const ratio=Math.min(1,640/first.value.displayWidth,480/first.value.displayHeight);

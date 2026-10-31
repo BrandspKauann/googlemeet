@@ -9,7 +9,7 @@ async function startWorkerBeauty(input,values,onStatus,onError,cancelled,signal)
     if(signal?.aborted)throw Error('Preparação do filtro cancelada.');
     signal?.addEventListener('abort',stop,{once:true});
     const processor=new MediaStreamTrackProcessor({track,maxBufferSize:1});reader=processor.readable.getReader();output=new MediaStreamTrackGenerator({kind:'video'});output.contentHint='motion';writer=output.writable.getWriter();
-    worker=new Worker('/openmakeup/worker.js?v=20261030-frames3');
+    worker=new Worker('/openmakeup/worker.js?v=20261030-auto1');
     let failed;
     const ready=new Promise((resolve,reject)=>{
       rejectReady=reject;

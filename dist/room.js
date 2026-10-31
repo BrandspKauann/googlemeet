@@ -140,7 +140,7 @@ async function getTranslator(source,target,allowCreate=false){
  if(source===target)return {translate:async text=>text};
  const key=(profile?.remoteTranslation?'server:':'browser:')+source+':'+target;if(translators.has(key))return translators.get(key);
  if(profile?.remoteTranslation){
-  const tr={async translate(text){const result=await api('translate',{text,source,target});if(typeof result.text!=='string'||!result.text.trim())throw new Error('O servidor não retornou a tradução. O original continua salvo.');return result.text;}};
+  const tr={async translate(text){const parts=[];let rest=text;const limit=(source==='zh'||target==='zh')?160:2000;while(rest.length>limit){const head=rest.slice(0,limit);let cut=Math.max(head.lastIndexOf('。')+1,head.lastIndexOf('!')+1,head.lastIndexOf('?')+1,head.lastIndexOf('. ')+1,head.lastIndexOf(' '));if(cut<limit/2)cut=limit;parts.push(rest.slice(0,cut));rest=rest.slice(cut);}if(rest)parts.push(rest);const outputs=[];for(const part of parts){const result=await api('translate',{text:part,source,target});if(typeof result.text!=='string'||!result.text.trim())throw new Error('O servidor não retornou a tradução. O original continua salvo.');outputs.push(result.text);}return outputs.join(target==='zh'?'':' ');}};
   translators.set(key,tr);return tr;
  }
  const route=window.languageRouting.translation(source,target);if(route.provider==='identity')return {translate:async text=>text};
