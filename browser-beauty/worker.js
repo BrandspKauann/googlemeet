@@ -16,7 +16,7 @@ TextureLoader.prototype.load=function(url,onLoad,onProgress,onError){
   pending.catch(error=>onError?.(error));textures.push(pending);return texture;
 };
 const channel=createFrameChannel(self);
-let values,stopped=false,reader,writer,skin,mesh,makeupMesh,sdk;
+let values,stopped=false,reader,writer,skin,mesh,tracking,sdk;
 onmessage=({data})=>{
   if(data.type==='stop'){dispose();return;}
   if(data.type==='input'){channel.push(data.frame);return;}
@@ -24,22 +24,39 @@ onmessage=({data})=>{
   if(data.type==='values'){values=data.values;return;}
   if(data.type==='start')run({readable:channel.readable,writable:channel.writable,values:data.values}).catch(error=>{if(!stopped)postMessage({type:'error',message:error.message||String(error)});dispose();}).finally(()=>postMessage({type:'stopped'}));
 };
-function dispose(){if(stopped)return;stopped=true;channel.abort();reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});mesh?.close();makeupMesh?.close();skin?.dispose();sdk?.dispose();}
+function dispose(){if(stopped)return;stopped=true;channel.abort();reader?.cancel().catch(()=>{});writer?.abort().catch(()=>{});tracking?.terminate();mesh?.close();skin?.dispose();sdk?.dispose();}
 async function run({readable,writable,values:initial}){
   const {cachedFetch}=await import('/beauty-cache.js');self.fetch=cachedFetch;
-  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js?v=20261030-auto1')]);
+  const [{Renderer},{FaceMesh}]=await Promise.all([import('/gpupixel/renderer.js'),import('/face-tracking/facemesh.js?v=20261031-smooth1')]);
   values=initial;reader=readable.getReader();writer=writable.getWriter();
   const first=await reader.read();if(first.done)throw Error('A câmera foi encerrada.');
   const ratio=Math.min(1,640/first.value.displayWidth,480/first.value.displayHeight);
-  const w=Math.max(2,Math.round(first.value.displayWidth*ratio)),h=Math.max(2,Math.round(first.value.displayHeight*ratio));
+  let w=Math.max(2,Math.round(first.value.displayWidth*ratio)),h=Math.max(2,Math.round(first.value.displayHeight*ratio));
   first.value.close();channel.release();
   const input=new OffscreenCanvas(w,h),ctx=input.getContext('2d');
   const softened=new OffscreenCanvas(w,h),output=new OffscreenCanvas(w,h);
   const owned=new OffscreenCanvas(w,h),readback=owned.getContext('2d',{willReadFrequently:true});
   skin=new Renderer(softened);await skin.ready;
   postMessage({type:'status',message:'Preparando rastreamento facial…'});
-  mesh=new FaceMesh({delegate:'CPU'});if(await mesh.load()!=='ready')throw Error('Não foi possível preparar o rastreamento facial.');
-  makeupMesh=new FaceMesh({delegate:'CPU'});if(await makeupMesh.load()!=='ready')throw Error('Não foi possível preparar a maquiagem.');
+  // One shared detector, on a separate Worker. Rendering never waits for CPU
+  // inference; at most one small bitmap is in flight and the latest landmarks
+  // serve both skin/reshape and makeup.
+  mesh=new FaceMesh({delegate:'CPU'});
+  let trackingError,trackingBusy=false,landmarks,hasFace=false;
+  tracking=new Worker('/openmakeup/tracker.js?v=20261031-smooth1');
+  await new Promise((resolve,reject)=>{
+    const fail=message=>{trackingError=Error(message);reject(trackingError);};
+    tracking.onerror=event=>fail(event.message||'O rastreamento facial foi interrompido.');
+    tracking.onmessage=({data})=>{
+      if(data.type==='ready')resolve();
+      else if(data.type==='error')fail(data.message);
+      else if(data.type==='landmarks'){
+        trackingBusy=false;landmarks=data.faceLandmarks;hasFace=!!landmarks?.length;
+        mesh._ingest({faceLandmarks:landmarks},data.timestamp/1000,false);
+      }
+    };
+    tracking.postMessage({type:'start'});
+  });
   self.window=self;
   const video={videoWidth:w,videoHeight:h,readyState:2,HAVE_CURRENT_DATA:2,addEventListener(){},removeEventListener(){}};
   postMessage({type:'status',message:'Carregando o filtro de beleza…'});
@@ -70,20 +87,29 @@ async function run({readable,writable,values:initial}){
     mat.fragmentShader='uniform highp float aulaIntensity;\n'+mat.fragmentShader.slice(0,end)+'fragColor.a *= aulaIntensity;\n'+mat.fragmentShader.slice(end);mat.needsUpdate=true;
   }
   await sdk.apply('blush',{color:'#cc7180',finish:'matte'});await sdk.apply('lipstick',{color:'#a54b61',finish:'matte'});
-  let lastMakeupDetection=-Infinity,lastDetection=-Infinity,hasFace=false,landmarks,ready=false,lastStatus,lastHeartbeat=-Infinity;
+  let lastDetection=-Infinity,ready=false,lastStatus,lastHeartbeat=-Infinity,renderMs=0,renderSamples=0;
   const frameClock=createFrameClock(20);
   while(!stopped){
     const {done,value:frame}=await reader.read();if(done){if(!stopped)throw Error('O filtro deixou de receber imagens da câmera.');break;}
+    let released=false;const inputTimestamp=frame.timestamp;
+    const release=()=>{if(!released){released=true;frame.close();channel.release();}};
     try{
+      if(trackingError)throw trackingError;
       const now=performance.now(),timestamp=frameClock(now);if(timestamp===null)continue;
       const normalized=new VideoFrame(frame,{timestamp});
       try{ctx.drawImage(normalized,0,0,w,h);}finally{normalized.close();}
-      if(now-lastDetection>=200){
-        const result=mesh.landmarker.detectForVideo(input,now);landmarks=result.faceLandmarks;
-        mesh._ingest(result,now/1000,false);hasFace=!!landmarks?.length;lastDetection=now;
+      // Release the physical camera buffer before inference, GPU readback or
+      // output backpressure. Slow rendering must not starve the source camera.
+      release();
+      if(!trackingBusy&&now-lastDetection>=200){
+        trackingBusy=true;lastDetection=now;
+        createImageBitmap(input).then(bitmap=>{
+          if(stopped){bitmap.close();return;}
+          try{tracking.postMessage({type:'detect',bitmap,timestamp:now},[bitmap]);}
+          catch(error){bitmap.close();trackingError=error;}
+        }).catch(error=>{trackingError=error;trackingBusy=false;});
       }
       skin.render(input,w,h,mesh.presence>0?mesh.points:null,values);
-      if(now-lastMakeupDetection>=200){const result=makeupMesh.landmarker.detectForVideo(softened,now);landmarks=result.faceLandmarks;hasFace=!!landmarks?.length;lastMakeupDetection=now;}
       engine.faceObject3D.visible=hasFace;
       if(hasFace)engine._onResults({multiFaceLandmarks:landmarks});
       engine.blushMat.uniforms.aulaIntensity.value=values.blush/100;engine.lipsMat.uniforms.aulaIntensity.value=values.lipstick/100;
@@ -95,12 +121,21 @@ async function run({readable,writable,values:initial}){
       readback.drawImage(output,0,0,w,h);
       const pixels=readback.getImageData(0,0,w,h);
       const processed=new VideoFrame(pixels.data,{format:'RGBA',codedWidth:w,codedHeight:h,timestamp});
+      renderMs=renderSamples?renderMs*.9+(performance.now()-now)*.1:performance.now()-now;renderSamples++;
       try{await writer.write(processed);}finally{processed.close();}
       if(stopped)continue;
       if(!ready){ready=true;postMessage({type:'ready'});}
-      if(now-lastHeartbeat>=1000){lastHeartbeat=now;postMessage({type:'frame',inputTimestamp:frame.timestamp,outputTimestamp:timestamp});}
+      if(now-lastHeartbeat>=1000){lastHeartbeat=now;postMessage({type:'frame',inputTimestamp,outputTimestamp:timestamp,renderMs,width:w,height:h});}
       if(lastStatus!==hasFace){lastStatus=hasFace;postMessage({type:'status',message:hasFace?'Filtro de beleza ativo, inclusive em outra aba.':'Filtro pronto. Aproxime o rosto da câmera para aplicar os ajustes.'});}
-    }finally{frame.close();channel.release();}
+      // Software/slow GPUs must keep moving, with all effects still enabled.
+      // Reduce processing resolution after sustained overload; never build a
+      // backlog or oscillate resolution while the camera is running.
+      if(renderSamples>=20&&renderMs>45&&w>384){
+        const nextWidth=Math.max(384,Math.round(w*.75));h=Math.max(2,Math.round(h*nextWidth/w));w=nextWidth;
+        for(const canvas of [input,softened,owned]){canvas.width=w;canvas.height=h;}
+        engine._sizeToVideoBox();renderMs=0;renderSamples=0;
+      }
+    }finally{release();}
   }
   dispose();
 }

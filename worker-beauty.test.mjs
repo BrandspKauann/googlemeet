@@ -44,8 +44,11 @@ test('missing background-video API selects the combined compatible pipeline',asy
 
 test('stalled beauty frames trigger one recovery and release the failed output, not the camera',async()=>{
  const s=setup(),pending=s.start();s.workers[0].reply({type:'ready'});await pending;
- s.tick(7000);assert.equal(s.errors.length,0);s.workers[0].reply({type:'frame'});
- s.tick(7000);assert.equal(s.errors.length,0);s.tick(2000);
+ s.tick(2000);assert.equal(s.errors.length,0);
+ const frame={close(){}};s.workers[0].reply({type:'output',frame});await new Promise(r=>setImmediate(r));
+ s.tick(2000);assert.equal(s.errors.length,0);
+ // A live Worker alone is not evidence of frames reaching the camera output.
+ s.workers[0].reply({type:'frame'});s.tick(1000);
  assert.equal(s.errors.length,1);assert.match(s.errors[0],/parou de atualizar/);
  assert.equal(s.workers[0].terminated,true);assert.equal(s.outputs[0].stopped,true);assert.equal(s.raw.stopped,false);
  s.tick(10000);assert.equal(s.errors.length,1);assert.equal(s.intervals.size,0);
@@ -63,6 +66,15 @@ test('beauty keeps advancing when camera timestamps repeat or reset',()=>{
 test('frame clock bounds work using arrival time and rejects invalid arrivals',()=>{
  const clock=createFrameClock(20);
  assert.equal(clock(NaN),null);assert.equal(clock(0),0);assert.equal(clock(10),null);assert.equal(clock(49),null);assert.equal(clock(50),50000);assert.equal(clock(100),100000);
+});
+
+test('24 and 30 fps sources retain a 20 fps cadence instead of dropping every other frame',()=>{
+ for(const inputRate of [24,30]){
+  const clock=createFrameClock(20),timestamps=[];
+  for(let i=0;i<inputRate*5;i++){const timestamp=clock(i*1000/inputRate);if(timestamp!==null)timestamps.push(timestamp);}
+  assert.ok(timestamps.length>=99&&timestamps.length<=101,`${inputRate} fps source produced ${timestamps.length} frames in five seconds`);
+  assert.ok(timestamps.every((t,i)=>!i||t>timestamps[i-1]));
+ }
 });
 
 

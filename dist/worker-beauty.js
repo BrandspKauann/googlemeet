@@ -9,7 +9,7 @@ async function startWorkerBeauty(input,values,onStatus,onError,cancelled,signal)
     if(signal?.aborted)throw Error('Preparação do filtro cancelada.');
     signal?.addEventListener('abort',stop,{once:true});
     const processor=new MediaStreamTrackProcessor({track,maxBufferSize:1});reader=processor.readable.getReader();output=new MediaStreamTrackGenerator({kind:'video'});output.contentHint='motion';writer=output.writable.getWriter();
-    worker=new Worker('/openmakeup/worker.js?v=20261030-auto1');
+    worker=new Worker('/openmakeup/worker.js?v=20261031-smooth1');
     let failed;
     const ready=new Promise((resolve,reject)=>{
       rejectReady=reject;
@@ -20,11 +20,10 @@ async function startWorkerBeauty(input,values,onStatus,onError,cancelled,signal)
         if(data.type==='output'){
           const frame=data.frame;
           if(stopped){frame.close();return;}
-          Promise.resolve().then(()=>writer.write(frame)).then(()=>{if(!stopped)worker.postMessage({type:'output-consumed'});}).catch(error=>failed(error)).finally(()=>frame.close());
+          Promise.resolve().then(()=>writer.write(frame)).then(()=>{lastFrame=Date.now();if(!stopped)worker.postMessage({type:'output-consumed'});}).catch(error=>failed(error)).finally(()=>frame.close());
         }
         else if(data.type==='input-consumed'){const resume=inputAck;inputAck=null;resume?.();}
-        else if(data.type==='ready'&&!settled){settled=true;clearTimeout(timeout);lastFrame=Date.now();watchdog=setInterval(()=>{if(Date.now()-lastFrame>8000&&!cancelled()){failed(Error('O filtro parou de atualizar a câmera.'));stop();}},2000);resolve();}
-        else if(data.type==='frame'){lastFrame=Date.now();}
+        else if(data.type==='ready'&&!settled){settled=true;clearTimeout(timeout);lastFrame=Date.now();watchdog=setInterval(()=>{if(Date.now()-lastFrame>2500&&!cancelled()){failed(Error('O filtro parou de atualizar a câmera.'));stop();}},500);resolve();}
         else if(data.type==='status'&&!cancelled())onStatus(data.message);
         else if(data.type==='error')failed(Error(data.message));
       };
