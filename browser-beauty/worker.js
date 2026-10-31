@@ -1,5 +1,4 @@
 import {createFrameChannel} from './frame-channel.js';
-import {createFrameClock} from './frame-clock.js';
 import {OpenMakeup} from 'open-makeup-sdk';
 import {CanvasTexture,LinearFilter,PlaneGeometry,SRGBColorSpace,Texture,TextureLoader} from 'three';
 
@@ -88,16 +87,14 @@ async function run({readable,writable,values:initial}){
   }
   await sdk.apply('blush',{color:'#cc7180',finish:'matte'});await sdk.apply('lipstick',{color:'#a54b61',finish:'matte'});
   let lastDetection=-Infinity,ready=false,lastStatus,lastHeartbeat=-Infinity,renderMs=0,renderSamples=0;
-  const frameClock=createFrameClock(20);
   while(!stopped){
     const {done,value:frame}=await reader.read();if(done){if(!stopped)throw Error('O filtro deixou de receber imagens da câmera.');break;}
     let released=false;const inputTimestamp=frame.timestamp;
     const release=()=>{if(!released){released=true;frame.close();channel.release();}};
     try{
       if(trackingError)throw trackingError;
-      const now=performance.now(),timestamp=frameClock(now);if(timestamp===null)continue;
-      const normalized=new VideoFrame(frame,{timestamp});
-      try{ctx.drawImage(normalized,0,0,w,h);}finally{normalized.close();}
+      const now=performance.now();
+      ctx.drawImage(frame,0,0,w,h);
       // Release the physical camera buffer before inference, GPU readback or
       // output backpressure. Slow rendering must not starve the source camera.
       release();
@@ -120,12 +117,13 @@ async function run({readable,writable,values:initial}){
       // Copy pixels into owned memory: do not transmit a mutable GPU canvas surface.
       readback.drawImage(output,0,0,w,h);
       const pixels=readback.getImageData(0,0,w,h);
-      const processed=new VideoFrame(pixels.data,{format:'RGBA',codedWidth:w,codedHeight:h,timestamp});
       renderMs=renderSamples?renderMs*.9+(performance.now()-now)*.1:performance.now()-now;renderSamples++;
-      try{await writer.write(processed);}finally{processed.close();}
+      // Transfer ordinary, owned pixels. Do not feed synthetic VideoFrames to
+      // a TrackGenerator: the browser owns the output camera clock/capture.
+      await writer.write({pixels:pixels.data,width:w,height:h});
       if(stopped)continue;
       if(!ready){ready=true;postMessage({type:'ready'});}
-      if(now-lastHeartbeat>=1000){lastHeartbeat=now;postMessage({type:'frame',inputTimestamp,outputTimestamp:timestamp,renderMs,width:w,height:h});}
+      if(now-lastHeartbeat>=1000){lastHeartbeat=now;postMessage({type:'frame',inputTimestamp,renderMs,width:w,height:h});}
       if(lastStatus!==hasFace){lastStatus=hasFace;postMessage({type:'status',message:hasFace?'Filtro de beleza ativo, inclusive em outra aba.':'Filtro pronto. Aproxime o rosto da câmera para aplicar os ajustes.'});}
       // Software/slow GPUs must keep moving, with all effects still enabled.
       // Reduce processing resolution after sustained overload; never build a

@@ -8,6 +8,6 @@ export function createFrameChannel(scope){
   release(){if(!closed)scope.postMessage({type:'input-consumed'});},
   consumed(){const next=outputAck;outputAck=null;next?.();},
   readable:{getReader:()=>({read:()=>{if(pending){const value=pending;pending=null;return Promise.resolve({done:false,value});}if(closed)return Promise.resolve({done:true});return new Promise(resolve=>read=resolve);},cancel})},
-  writable:{getWriter:()=>({write:frame=>{if(closed)return Promise.reject(Error('Filtro encerrado.'));return new Promise((resolve,reject)=>{outputAck=resolve;try{scope.postMessage({type:'output',frame},[frame]);}catch(error){outputAck=null;reject(error);}});},abort:cancel})}
+  writable:{getWriter:()=>({write:frame=>{if(closed)return Promise.reject(Error('Filtro encerrado.'));return new Promise((resolve,reject)=>{outputAck=resolve;try{scope.postMessage({type:'output',frame},[frame.pixels.buffer]);}catch(error){outputAck=null;reject(error);}});},abort:cancel})}
  };
 }

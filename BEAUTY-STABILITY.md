@@ -1,45 +1,47 @@
-# Estabilidade da câmera com filtro — 31/10/2026
+# Saída nativa da câmera com filtro — 31/10/2026
 
-O debug reproduziu vídeo entrecortado, não um congelamento permanente, no
-Chrome com câmera sintética de 24 fps. O limitador esperava um intervalo
-completo a partir de cada quadro aceito e descartava quadros demais. Além
-disso, duas inferências faciais síncronas disputavam o tempo da renderização,
-e o quadro físico da câmera ficava retido até a entrega da saída.
+O usuário confirmou congelamento completo com o filtro ligado e recuperação ao
+desligá-lo. A alteração anterior, que melhorava a fluidez em testes sintéticos,
+não resolveu esse relato. O congelamento completo no dispositivo do usuário
+ainda não foi reproduzido no ambiente de teste.
 
-## Correção
+## Alteração atual
 
-- Cadência de saída baseada em prazos, preservando 20 fps com fontes de 24/30 fps.
-- Um detector facial compartilhado pelos efeitos de pele e maquiagem, em Worker
-  separado. A renderização usa o resultado mais recente e nunca aguarda inferência.
-- No máximo um bitmap de rastreamento pendente. Quadros físicos da câmera são
-  liberados logo após a cópia de entrada, antes do processamento e da espera pela saída.
-- Redução gradual da resolução quando o custo de renderização permanece alto,
-  mantendo os efeitos combinados e o preset Porcelana.
-- Proteção baseada na entrega real dos quadros: após 2,5 segundos sem saída,
-  restaura a câmera original e avisa que o filtro foi interrompido.
+- Removido o limite de 20 fps e excluído o agendador de descarte de quadros.
+- Removidos os limites fixos de FPS dos caminhos compatíveis e do desfoque.
+- A saída principal usa `HTMLCanvasElement.captureStream()` sem argumento de
+ taxa de quadros, com captura solicitada a cada imagem concluída.
+- O Worker devolve buffers RGBA próprios. Não há `MediaStreamTrackGenerator`
+ nem timestamps sintéticos na saída do filtro de beleza.
+- O navegador administra a captura e o relógio do vídeo enviado ao WebRTC.
+- O monitor observa tanto novas imagens renderizadas quanto quadros realmente
+ capturados no track de saída. Se qualquer etapa parar, restaura a câmera
+ original e informa a interrupção do efeito.
+- Os efeitos combinados, Porcelana automático, rastreamento facial separado e
+ download/cache do modelo no navegador permanecem ativos.
 
-O filtro continua no navegador, com download automático e cache existentes.
-Transcrição e tradução no servidor não foram alteradas.
+A taxa efetiva depende da câmera, do navegador e do tempo de processamento.
+Não existe mais um teto fixo de FPS definido pelo filtro. A resolução de
+processamento ainda se ajusta em caso de sobrecarga; isso não é um limite de FPS.
+Nenhum vídeo da câmera é enviado ao servidor de transcrição/tradução.
 
-## Validação
+## Verificações
 
-Chrome descartável, câmera sintética com movimento, sem câmera pessoal:
+Chrome com NVIDIA D3D11 e câmera sintética móvel de 24 fps: saída acompanhando
+aproximadamente 24 fps. Sala local com professora e aluno, vídeo recebido por
+WebRTC: oito imagens distintas em oito amostras com ajustes abertos, fechados,
+a aba do aluno ativa e após desligar/religar o filtro. O teste também forçou
+timestamps repetidos na entrada da câmera.
 
-| Cenário | Antes | Depois |
-| --- | --- | --- |
-| NVIDIA D3D11, câmera 24 fps | média 12,8 fps | aproximadamente 20 fps |
-| Renderização por software | média 9,7 fps | média 19,6 fps após adaptação para 384×288 |
+Ao interromper deliberadamente o Worker, a câmera original voltou em 2.537 ms
+e manteve movimento. O aviso de VideoFrame no console nessa interrupção forçada
+é esperado; o encerramento normal libera os quadros antes de terminar o Worker.
 
-São medições locais com vídeo sintético, não garantia de desempenho em todos
-os computadores. O rastreamento foi artificialmente atrasado em 600 ms por
-inferência para verificar que não bloqueia a saída de vídeo.
+65 testes Node passaram. Os testes novos verificam captura sem argumento de
+FPS, entrega de todos os quadros de saída, acompanhamento de todos os callbacks
+de vídeo no modo compatível e recuperação se a captura parar mesmo com o Worker
+continuando a produzir pixels. Essas verificações não substituem a confirmação
+no equipamento em que o usuário observou o congelamento.
 
-Uma sala de teste com professora e aluno verificou via WebRTC oito imagens
-distintas em oito amostras, com ajustes abertos e fechados, inclusive com
-timestamps repetidos na câmera. Ao interromper deliberadamente o Worker,
-a câmera original voltou em 2.689 ms e continuou em movimento. O aviso de
-VideoFrame no console nessa interrupção forçada é esperado; o encerramento
-normal usa o protocolo de liberação dos quadros.
-
-66 testes Node passaram, incluindo a regressão da cadência e a recuperação
-quando o Worker responde sem entregar novos quadros.
+Câmera e filtro executam no navegador do participante. Whisper e tradução
+executam no servidor Docker, sem alteração nesta entrega.

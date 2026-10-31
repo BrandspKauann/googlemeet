@@ -13,7 +13,7 @@
   const stop=()=>{signal.removeEventListener('abort',stop);clearTimeout(timer);worker?.terminate();clone.stop();output?.stop();if(!settled){settled=true;rejectReady?.(Error('Preparação do fundo cancelada.'));}};
   try{
    if(signal.aborted)throw Error('Preparação do fundo cancelada.');signal.addEventListener('abort',stop,{once:true});
-   const processor=new MediaStreamTrackProcessor({track:clone,maxBufferSize:1});output=new MediaStreamTrackGenerator({kind:'video'});output.contentHint='motion';worker=new Worker('/background-runtime/v1/worker.js?v=20261017-strength1');
+   const processor=new MediaStreamTrackProcessor({track:clone,maxBufferSize:1});output=new MediaStreamTrackGenerator({kind:'video'});output.contentHint='motion';worker=new Worker('/background-runtime/v1/worker.js?v=20261031-native1');
    await new Promise((resolve,reject)=>{rejectReady=reject;const fail=error=>{if(!settled){settled=true;clearTimeout(timer);reject(error);}else if(!signal.aborted)pause(error).catch(()=>{});};worker.onerror=event=>fail(Error(event.message||'O desfoque foi interrompido.'));worker.onmessage=({data})=>{if(data.type==='ready'&&!settled){settled=true;clearTimeout(timer);resolve();}else if(data.type==='error')fail(Error(data.message));};timer=setTimeout(()=>fail(Error('O desfoque demorou para carregar. Tente novamente.')),60000);worker.postMessage({type:'start',intensity,readable:processor.readable,writable:output.writable},[processor.readable,output.writable]);});
    return {stream:new MediaStream([output]),stop,setIntensity:value=>worker.postMessage({type:'intensity',value})};
   }catch(error){stop();throw error;}

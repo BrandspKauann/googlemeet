@@ -1,3 +1,9 @@
+window.followBeautyVideoFrames=function(source,draw,onError){
+ let stopped=false,handle;const native=typeof source.requestVideoFrameCallback==='function';
+ const schedule=()=>{handle=native?source.requestVideoFrameCallback(run):requestAnimationFrame(run)};
+ function run(){if(stopped)return;try{draw()}catch(error){onError(error)}if(!stopped)schedule()}
+ schedule();return ()=>{stopped=true;if(native)source.cancelVideoFrameCallback(handle);else cancelAnimationFrame(handle)};
+};
 window.createCompatibleBeauty=async function(input,getValues,status,onError,cancelled,signal){
  let values=getValues(),modules;
  async function loadModules(){return modules||=Promise.all([import('./gpupixel/renderer.js'),import('./face-tracking/facemesh.js')]);}
@@ -12,13 +18,13 @@ window.createCompatibleBeauty=async function(input,getValues,status,onError,canc
         return {stream:makeup.stream,stop(){makeup.stop();skin.stop();}};
       }catch(error){skin.stop();throw error;}
     }
-    if(mode==='openmakeup'){const {createOpenMakeup}=await import('/openmakeup/adapter.js');return createOpenMakeup(input,()=>values,text=>{if(!cancelled())status(text.replace('OpenMakeupSDK aplicado','Filtro de beleza aplicado'))},error=>{if(!cancelled())onError(error)},()=>cancelled());}
+    if(mode==='openmakeup'){const {createOpenMakeup}=await import('/openmakeup/adapter.js?v=20261031-native1');return createOpenMakeup(input,()=>values,text=>{if(!cancelled())status(text.replace('OpenMakeupSDK aplicado','Filtro de beleza aplicado'))},error=>{if(!cancelled())onError(error)},()=>cancelled());}
 
     const [{Renderer},{FaceMesh}]=await loadModules();
     if(cancelled())return null;
     const canvas=document.createElement('canvas'),source=document.createElement('video');source.muted=true;source.autoplay=true;source.playsInline=true;source.srcObject=input;
-    let renderer,mesh,output,timer,disposed=false,lastDetection=-1,lastVideoTime=-1;
-    const stop=()=>{if(disposed)return;disposed=true;clearInterval(timer);source.pause();source.srcObject=null;output?.getTracks().forEach(t=>t.stop());mesh?.close();renderer?.dispose();};
+    let renderer,mesh,output,stopFrames,disposed=false,lastDetection=-1,lastVideoTime=-1;
+    const stop=()=>{if(disposed)return;disposed=true;stopFrames?.();source.pause();source.srcObject=null;output?.getTracks().forEach(t=>t.stop());mesh?.close();renderer?.dispose();};
     try{
       if(!canvas.captureStream)throw Error('Este navegador não suporta câmera com efeitos.');
       renderer=new Renderer(canvas);await renderer.ready;mesh=new FaceMesh();
@@ -36,8 +42,7 @@ window.createCompatibleBeauty=async function(input,getValues,status,onError,canc
         if(renderer.gl.isContextLost())throw Error('A aceleração de vídeo foi interrompida.');
         const text=face?'Efeito ativo. O aluno recebe sua câmera com o filtro.':'Efeito pronto. Aproxime o rosto da câmera para aplicar os ajustes.';if(text!==lastFaceStatus&&!cancelled()&&mode!=='gpupixel'){status(text);lastFaceStatus=text}
       };
-      const run=()=>{try{draw()}catch(error){if(!disposed&&!cancelled())onError(error)}};
-      draw();output=canvas.captureStream(24);output.getVideoTracks()[0].contentHint='motion';timer=setInterval(run,1000/24);
+      draw();output=canvas.captureStream();output.getVideoTracks()[0].contentHint='motion';stopFrames=window.followBeautyVideoFrames(source,draw,error=>{if(!disposed&&!cancelled())onError(error)});
       canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();if(!disposed&&!cancelled())onError(Error('A aceleração de vídeo foi interrompida.'))});
       return {stream:output,stop};
     }catch(error){stop();throw error}

@@ -7,8 +7,8 @@ export async function createOpenMakeup(input, getValues, onStatus, onError, canc
   const tracker=new FaceMesh();
   const source=document.createElement('video');source.muted=true;source.playsInline=true;source.srcObject=input;
   const canvas=document.createElement('canvas');
-  let sdk,output,timer,disposed=false,lastTime=-1,lastDetection=0,hasFace=false;
-  const stop=()=>{if(disposed)return;disposed=true;clearInterval(timer);output?.getTracks().forEach(t=>t.stop());sdk?.engine.scene?.traverse(object=>{object.geometry?.dispose();for(const mat of [object.material].flat().filter(Boolean)){for(const uniform of Object.values(mat.uniforms||{}))if(uniform.value?.isTexture)uniform.value.dispose();mat.map?.dispose();mat.dispose();}});sdk?.dispose();sdk?.engine.videoTexture?.dispose();sdk?.engine.renderer?.forceContextLoss();tracker.close();source.pause();source.srcObject=null;};
+  let sdk,output,stopFrames,disposed=false,lastTime=-1,lastDetection=0,hasFace=false;
+  const stop=()=>{if(disposed)return;disposed=true;stopFrames?.();output?.getTracks().forEach(t=>t.stop());sdk?.engine.scene?.traverse(object=>{object.geometry?.dispose();for(const mat of [object.material].flat().filter(Boolean)){for(const uniform of Object.values(mat.uniforms||{}))if(uniform.value?.isTexture)uniform.value.dispose();mat.map?.dispose();mat.dispose();}});sdk?.dispose();sdk?.engine.videoTexture?.dispose();sdk?.engine.renderer?.forceContextLoss();tracker.close();source.pause();source.srcObject=null;};
   try {
     await source.play();
     if(await tracker.load()!=='ready')throw Error('Não foi possível preparar o rastreamento do OpenMakeup.');
@@ -64,8 +64,8 @@ export async function createOpenMakeup(input, getValues, onStatus, onError, canc
       onStatus(hasFace?'Efeito ativo. OpenMakeupSDK aplicado à câmera enviada ao aluno.':'Efeito pronto. Aproxime o rosto da câmera para aplicar os ajustes.');
     };
     if(cancelled()){stop();return null;}
-    draw();output=canvas.captureStream(24);
-    timer=setInterval(()=>{try{draw()}catch(error){if(!disposed)onError(error);}},1000/24);
+    draw();output=canvas.captureStream();
+    stopFrames=window.followBeautyVideoFrames(source,draw,error=>{if(!disposed)onError(error)});
     return {stream:output,stop};
   }catch(error){stop();throw error;}
 }
