@@ -30,6 +30,8 @@ A tradução Hy continua na CPU. Ela pode levar vários segundos, especialmente 
 
 Os limiares de 1,6/2,5/0,9 segundo foram testados com áudio sintético e relógios controlados. O atraso real depende de reconhecimento, tradução, carga do computador e conexão. A preparação inicial após ligar o Docker também pode demorar, e o endereço do túnel temporário precisa estar atualizado na Vercel.
 
+Na preparação deste computador, o Whisper permaneceu preparando enquanto o tradutor ocupava memória. Após parar temporariamente o tradutor, o Whisper ficou pronto. O Compose agora inicia o tradutor após a saúde do Whisper, reduzindo a concorrência de memória na inicialização; os dois continuam rodando juntos durante a aula.
+
 ## Referências públicas
 
 O [guia de reprodução de voz do Transync](https://www.transyncai.com/docs/how-to-use-voice-playback-in-transync-ai/) descreve atraso configurável para reprodução. Isso não determina uma espera obrigatória antes do reconhecimento. O [guia de tradução em tempo real](https://www.transyncai.com/docs/how-to-start-real-time-translation/) descreve seus motores comerciais; seus pesos não foram disponibilizados para esta integração.
