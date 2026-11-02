@@ -1,0 +1,79 @@
+{
+  "date": "2026-11-01",
+  "asr": "faster-whisper large-v3 / CUDA int8_float16 beam 3",
+  "translation": "Hy-MT2-1.8B Q8_0 / CPU 4 threads / load-mode none",
+  "method": "One measurement per synthetic window; warm models; local HTTP; excludes capture wait, Vercel and internet RTT. Not a quality comparison or human-voice evaluation.",
+  "cases": [
+    {
+      "synthetic": true,
+      "language": "zh",
+      "audioSeconds": 2,
+      "asrMs": 1191,
+      "text": "老师你好",
+      "translationMs": 1016,
+      "translation": "Olá, professor."
+    },
+    {
+      "synthetic": true,
+      "language": "zh",
+      "audioSeconds": 8.02,
+      "asrMs": 1640,
+      "text": "老师你好,今天我们一起学习中文,请问你能听到我的声音吗?",
+      "translationMs": 2564,
+      "translation": "Olá, professor. Hoje estamos aprendendo chinês juntos. Será que você consegue me ouvir?"
+    },
+    {
+      "synthetic": true,
+      "language": "pt",
+      "audioSeconds": 2,
+      "asrMs": 1089,
+      "text": "A palavra carro tem quantas...",
+      "translationMs": 994,
+      "translation": "“carro”这个词有多少个……"
+    },
+    {
+      "synthetic": true,
+      "language": "pt",
+      "audioSeconds": 7.4183125,
+      "asrMs": 1180,
+      "text": "A palavra carro tem quantas letras? A palavra coração significa o quê?",
+      "translationMs": 1537,
+      "translation": "“carro”这个词有多少个字母？ “coração”这个词的意思是什么？"
+    }
+  ],
+  "browserSyntheticCapture": {
+    "passed": true,
+    "firstTranslatedPreview": {
+      "seconds": 3.933,
+      "original": "老师你好",
+      "translation": "Olá, professor.",
+      "savedCount": 0
+    },
+    "requests": [
+      {
+        "type": "asr",
+        "seconds": 2.103
+      },
+      {
+        "type": "translate",
+        "seconds": 3.058
+      },
+      {
+        "type": "asr",
+        "seconds": 3.986
+      },
+      {
+        "type": "translate",
+        "seconds": 6.45
+      }
+    ],
+    "finals": [
+      {
+        "text": "老师你好 今天我们一起学习中",
+        "translation": "Olá, professor. Hoje vamos estudar juntos.",
+        "pending": false
+      }
+    ],
+    "errors": []
+  }
+}

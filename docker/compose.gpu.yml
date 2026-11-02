@@ -22,7 +22,7 @@ services:
       driver: none
     image: ghcr.io/ggml-org/llama.cpp@sha256:b32890309c1a33a534a01b0b461e953dc2c5a6bac20213abcf48e22847a19c85
     restart: unless-stopped
-    command: ["-m", "/models/model.gguf", "--host", "0.0.0.0", "--port", "8080", "-c", "4096", "-t", "4", "-ngl", "0", "--parallel", "1"]
+    command: ["-m", "/models/model.gguf", "--load-mode", "none", "--host", "0.0.0.0", "--port", "8080", "-c", "4096", "-t", "4", "-ngl", "0", "--parallel", "1"]
     environment:
       LLAMA_API_KEY: ${ASR_SECRET:?Defina ASR_SECRET}
     volumes:

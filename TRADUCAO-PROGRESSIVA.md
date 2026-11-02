@@ -35,3 +35,20 @@ Na preparação deste computador, o Whisper permaneceu preparando enquanto o tra
 ## Referências públicas
 
 O [guia de reprodução de voz do Transync](https://www.transyncai.com/docs/how-to-use-voice-playback-in-transync-ai/) descreve atraso configurável para reprodução. Isso não determina uma espera obrigatória antes do reconhecimento. O [guia de tradução em tempo real](https://www.transyncai.com/docs/how-to-start-real-time-translation/) descreve seus motores comerciais; seus pesos não foram disponibilizados para esta integração.
+
+## Medição com os modelos reais
+
+Após a preparação, os endpoints privado e público retornaram prontidão para Whisper e tradução. O GGUF chinês passou a ser carregado com `--load-mode none`, opção verificada no executável fixado do llama.cpp, evitando o mapeamento de memória do arquivo montado do Windows. Os pesos Q8_0 e a precisão configurada não mudaram.
+
+Uma medição por janela, com modelos aquecidos e HTTP direto no servidor local:
+
+| Fala sintética | Áudio da janela | Reconhecimento | Tradução |
+| --- | --- | --- | --- |
+| Mandarim, início | 2,00 s | 1,19 s | 1,02 s |
+| Mandarim, frase completa | 8,02 s | 1,64 s | 2,56 s |
+| Português, início | 2,00 s | 1,09 s | 0,99 s |
+| Português, perguntas completas | 7,42 s | 1,18 s | 1,54 s |
+
+No Chrome, o teste adicional usou a captura AudioWorklet real com um WAV sintético no lugar do microfone, sem substituir os endpoints de reconhecimento ou tradução. A primeira tradução de mandarim para português apareceu 3,933 segundos após clicar em ligar microfone, antes de existir fala confirmada no histórico. Desligar o microfone concluiu o trecho em andamento, sincronizou o registro criptografado e manteve a tradução disponível. Não houve erros de JavaScript. Não foi utilizada voz humana nem hardware de microfone pessoal.
+
+As prévias de dois segundos ficaram naturalmente incompletas; a versão completa em português preservou as perguntas sobre “carro” e “coração” na tradução chinesa. Essa amostra pequena não comprova precisão geral superior. Os números de inferência da tabela excluem espera de captura e trânsito pela Vercel/túnel; o teste do Chrome também foi local. Não são garantia de quatro segundos em uma aula pela internet. Dados e saídas estão em [LIVE-20261101.json](benchmarks/LIVE-20261101.json).
