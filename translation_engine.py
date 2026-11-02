@@ -173,13 +173,19 @@ class TranslationEngine:
                 print('Tradução preparada: ' + spec['source'] + ' → ' + spec['target'], flush=True)
             if self.hy_url:
                 import time
-                for attempt in range(120):
+                # Cold Windows/Docker starts can take longer than two minutes.
+                # Keep the daemon preparing, instead of remaining offline forever.
+                attempt = 0
+                while True:
                     try:
                         self.hy_translate('你好。', 'pt')
                         break
                     except Exception:
-                        if attempt == 119: raise
-                        time.sleep(1)
+                        attempt += 1
+                        if attempt == 1:
+                            print('Aguardando o tradutor de chinês preparar o modelo.', flush=True)
+                        time.sleep(min(5, attempt))
+            self.state['error'] = None
             self.state['ready'] = True
         except Exception as error:
             self.state['error'] = type(error).__name__

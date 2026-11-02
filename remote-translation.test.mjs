@@ -10,7 +10,7 @@ function setup(remote=true){
   let unavailable=false,downloads=0;
   const window={captionUI:{set(...args){captions.push(args)}},languageRouting:{translation:()=>({provider:'browser',pivot:'en'})}};
   Object.defineProperty(window,'Translator',{get(){downloads++;throw new Error('Browser translation must not be accessed')}});
-  const context={window,state:{teacherLanguage:'zh',studentLanguage:'pt'},profile:{remoteTranslation:remote},viewLang:'pt',names:{zh:'中文 — Mandarim',pt:'Português'},translators:new Map(),records:new Map(),translationLanes:new Map(),translationQueue:Promise.resolve(),$:element,
+  const context={window,liveCaptions:{has:()=>false,cachedTranslate:(s,t,text,run)=>run()},state:{teacherLanguage:'zh',studentLanguage:'pt'},profile:{remoteTranslation:remote},viewLang:'pt',names:{zh:'中文 — Mandarim',pt:'Português'},translators:new Map(),records:new Map(),translationLanes:new Map(),translationQueue:Promise.resolve(),$:element,
     recordRole:record=>record.data.role,latestRecord:role=>[...context.records.values()].filter(record=>record.data.role===role).at(-1),
     api:async(action,body)=>{requests.push({action,body});if(unavailable)throw new Error('Servidor de tradução indisponível.');return {text:'Olá. Quantas letras tem a palavra “carro”?' };}};
   vm.createContext(context);

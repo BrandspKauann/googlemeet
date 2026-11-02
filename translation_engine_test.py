@@ -10,6 +10,20 @@ import translation_engine as engine
 
 
 class TranslationTests(unittest.TestCase):
+    def test_cold_start_keeps_waiting_for_translator_and_recovers(self):
+        with patch.dict('os.environ', {'TRANSLATION_HY_URL':'http://translator:8080'}):
+            model=engine.TranslationEngine()
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            (root/'translation-models.json').write_text('{"models": []}')
+            attempts=[RuntimeError('loading')]*125+['Olá']
+            with patch.object(engine,'ROOT',root), patch.object(model,'hy_translate',side_effect=attempts) as translate, patch('time.sleep') as sleep:
+                model.prepare()
+            self.assertTrue(model.state['ready'])
+            self.assertIsNone(model.state['error'])
+            self.assertEqual(translate.call_count,126)
+            self.assertLessEqual(max(c.args[0] for c in sleep.call_args_list),5)
+
     def test_chinese_uses_authenticated_direct_translation(self):
         import io
         with patch.dict('os.environ', {'TRANSLATION_HY_URL':'http://translator:8080','ASR_SECRET':'unit-secret'}):

@@ -1,3 +1,7 @@
+## Tradução progressiva — atualização de 1/11/2026
+
+A versão em nuvem inicia reconhecimento e tradução ao ligar o microfone. Não há espera fixa de três segundos: prévias acompanham a fala e a confirmação ocorre após aproximadamente 0,9 segundo de pausa ou ao desligar o microfone. Consulte [arquitetura, testes e limites](TRADUCAO-PROGRESSIVA.md). Whisper e Hy-MT2 continuam no servidor Docker; participantes não baixam esses modelos.
+
 # Aula Global
 
 Sala de aula com câmera, compartilhamento de tela, legendas traduzidas e exportação de transcrições. Repositório principal: [BrandspKauann/googlemeet](https://github.com/BrandspKauann/googlemeet).

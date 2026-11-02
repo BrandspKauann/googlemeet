@@ -79,3 +79,5 @@ body.server-recognition .recognition-settings{display:none!important}
 #backgroundBlurControls input{width:110px;min-width:60px;accent-color:#1a73e8;margin:0}
 #backgroundBlurControls output{min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
 @media(max-width:480px){#backgroundBlurControls{flex-wrap:wrap}#backgroundBlurControls input{flex:1}}
+
+.speech-bubble.provisional{border-style:dashed}.speech-bubble.provisional .bubble-status{color:#52647a}

@@ -1,8 +1,10 @@
 (() => {
   const dictionary={
     'Recursos do filtro prontos neste navegador.':'美颜资源已在此浏览器中准备就绪。',
-    'Microfone ligado. As legendas chegam após 3 segundos de pausa.':'麦克风已开启，停顿三秒后将显示字幕。',
-    'Transcrição ativa. Aguarda 3 segundos de pausa antes de enviar sua fala.':'转写已启用，将在您停顿三秒后提交语音。',
+    'Microfone ligado. Tradução simultânea ativa; prévias são revisadas nas pausas.':'麦克风已开启。实时翻译已启用，停顿时会校正预览。',
+    'Tradução simultânea ativa. A prévia acompanha a fala e é confirmada nas pausas.':'实时翻译已启用。预览随讲话更新，并在停顿时确认。',
+    'Prévia simultânea · pode mudar':'实时预览 · 可能调整',
+    'Aguardando fala…':'等待发言…',
     'O filtro parou de atualizar a câmera. Sua câmera continua sem efeito.':'美颜画面更新已中断，摄像头已恢复为原始画面。','O filtro deixou de receber imagens da câmera. Sua câmera continua sem efeito.':'美颜未能继续接收摄像头画面，摄像头已恢复为原始画面。',
     'Transcrição automática ativa. Fale normalmente.':'自动转写已启用，请正常说话。','Não foi possível reconhecer uma parte da fala com segurança.':'部分语音无法可靠识别。',
     'Intensidade do fundo':'背景虚化强度',

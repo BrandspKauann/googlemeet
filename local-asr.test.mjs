@@ -52,7 +52,7 @@ test('device capture preserves order, reports overflow, drains queued work and n
 
 
 
-test('server capture waits three seconds of silence and sends complete turns as bounded 16kHz audio',async()=>{
+test('server capture confirms after a natural pause and sends complete turns as bounded 16kHz audio',async()=>{
  const nodes=new Map();function element(){return {children:[],append(...v){this.children.push(...v);for(const n of v)if(n.id)nodes.set(n.id,n)},textContent:'',value:'browser',disabled:false,setAttribute(){},querySelector(){return null}}}
  let capture;const chunks=[],texts=[],gaps=[];let failAt=Infinity;
  class AudioContext{constructor(){this.sampleRate=48000;this.audioWorklet={async addModule(){}}}async resume(){}createMediaStreamSource(){return {connect(){},disconnect(){}}}createGain(){return {gain:{value:1},connect(){},disconnect(){}}}async close(){}}
@@ -61,13 +61,26 @@ test('server capture waits three seconds of silence and sends complete turns as 
  for(const file of ['asr-utils.js','local-asr.js'])vm.runInNewContext(fs.readFileSync(new URL('./dist/'+file,import.meta.url),'utf8'),env);
  nodes.get('speechEngine').value='server';const config={phase(){},gap:t=>gaps.push(t),text:t=>texts.push(t),transcribe:async wav=>{chunks.push(wav);if(chunks.length===failAt)throw Error('network');return {text:'Teste.',model:'large-v3',processingMs:100}}};await env.window.localASR.start({},config);
  capture.port.onmessage({data:new Float32Array(48000).fill(.1)});
- capture.port.onmessage({data:new Float32Array(132000)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,0);
- capture.port.onmessage({data:new Float32Array(12000)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,1);assert.equal(chunks[0].byteLength,32044);assert.equal(new DataView(chunks[0]).getUint32(24,true),16000);
+ capture.port.onmessage({data:new Float32Array(42000)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,0);
+ capture.port.onmessage({data:new Float32Array(1200)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,1);assert.equal(chunks[0].byteLength,32044);assert.equal(new DataView(chunks[0]).getUint32(24,true),16000);
  for(let i=0;i<12;i++)capture.port.onmessage({data:new Float32Array(48000).fill(.1)});
  await new Promise(r=>setImmediate(r));assert.equal(chunks.length,1,'continuous speech must not be submitted early');
- capture.port.onmessage({data:new Float32Array(144000)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,3);assert.equal(chunks[1].byteLength,320044);assert.equal(chunks[2].byteLength,64044);assert.equal(texts.at(-1),'Teste. Teste.');
+ capture.port.onmessage({data:new Float32Array(43200)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,3);assert.equal(chunks[1].byteLength,320044);assert.equal(chunks[2].byteLength,64044);assert.equal(texts.at(-1),'Teste. Teste.');
  capture.port.onmessage({data:new Float32Array(24000).fill(.1)});await env.window.localASR.stop();assert.equal(chunks.length,4,'explicit microphone stop drains the final speech');assert.equal(gaps.length,0);
  await env.window.localASR.start({},config);failAt=6;
  for(let i=0;i<12;i++)capture.port.onmessage({data:new Float32Array(48000).fill(.1)});
- capture.port.onmessage({data:new Float32Array(144000)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,6);assert.equal(texts.at(-1),'Teste.','successful portion survives a later chunk failing');assert.equal(gaps.length,1);await env.window.localASR.stop();
+ capture.port.onmessage({data:new Float32Array(43200)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,6);assert.equal(texts.at(-1),'Teste.','successful portion survives a later chunk failing');assert.equal(gaps.length,1);await env.window.localASR.stop();
+});
+
+test('server live capture previews while speaking, reuses final audio and drains a changed tail at microphone stop',async()=>{
+ const nodes=new Map();function element(){return {children:[],append(...v){this.children.push(...v);for(const n of v)if(n.id)nodes.set(n.id,n)},textContent:'',value:'browser',disabled:false,setAttribute(){},querySelector(){return null}}}
+ let capture;const chunks=[],previews=[],texts=[],seals=[],settled=[];
+ class AudioContext{constructor(){this.sampleRate=16000;this.audioWorklet={async addModule(){}}}async resume(){}createMediaStreamSource(){return {connect(){},disconnect(){}}}createGain(){return {gain:{value:1},connect(){},disconnect(){}}}async close(){}}
+ class AudioWorkletNode{constructor(){capture=this;this.port={}}connect(){}disconnect(){}}
+ const env={document:{querySelector:()=>element(),createElement:element,createTextNode:t=>({textContent:t})},window:{},AudioContext,AudioWorkletNode,fetch:async()=>({json:async()=>({ready:true})}),Float32Array,ArrayBuffer,DataView,Math,Promise,setTimeout,clearTimeout};
+ for(const file of ['asr-utils.js','live-audio.js','local-asr.js'])vm.runInNewContext(fs.readFileSync(new URL('./dist/'+file,import.meta.url),'utf8'),env);
+ nodes.get('speechEngine').value='server';const config={preview:p=>previews.push(p),sealing:p=>seals.push(p.turn),settled:p=>settled.push(p.turn),phase(){},gap:t=>assert.fail(t),text:(t,meta)=>texts.push({text:t,turn:meta.turn}),transcribe:async wav=>{chunks.push(wav);return {text:'Fala '+chunks.length,model:'large-v3'}}};await env.window.localASR.start({},config);
+ capture.port.onmessage({data:new Float32Array(32000).fill(.1)});await new Promise(r=>setImmediate(r));assert.equal(previews.length,1);assert.equal(texts.length,0);
+ capture.port.onmessage({data:new Float32Array(14400)});await new Promise(r=>setImmediate(r));assert.equal(chunks.length,1,'confirmation reuses complete preview audio');assert.equal(texts[0].text,'Fala 1');assert.equal(texts[0].turn,1);
+ capture.port.onmessage({data:new Float32Array(32000).fill(.1)});await new Promise(r=>setImmediate(r));capture.port.onmessage({data:new Float32Array(8000).fill(.1)});await env.window.localASR.stop();assert.equal(chunks.length,3);assert.equal(chunks[2].byteLength,80044,'last half second is included');assert.equal(texts.at(-1).turn,2);assert.deepEqual(seals,[1,2]);assert.deepEqual(settled,[1,2]);
 });

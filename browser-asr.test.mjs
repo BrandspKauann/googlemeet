@@ -93,18 +93,18 @@ test('uninstalled local speech uses remote recognition and permission errors do 
 });
 
 
-test('three-second pause resets on resumed speech and buffered audio is released on abort',()=>{
+test('natural pause resets on resumed speech and buffered audio is released on abort',()=>{
  const buffer=utilities().createPauseBuffer(16000);
  const voice=seconds=>new Float32Array(seconds*16000).fill(.1),silence=seconds=>new Float32Array(seconds*16000);
- assert.equal(buffer.push(silence(10)),null);assert.equal(buffer.push(voice(1)),null);assert.equal(buffer.push(silence(2)),null);
- assert.equal(buffer.push(voice(1)),null);assert.equal(buffer.push(silence(2)),null);const turn=buffer.push(silence(1));assert.ok(turn?.length);assert.equal(buffer.flush(),null);
+ assert.equal(buffer.push(silence(10)),null);assert.equal(buffer.push(voice(1)),null);assert.equal(buffer.push(silence(.8)),null);
+ assert.equal(buffer.push(voice(1)),null);assert.equal(buffer.push(silence(.8)),null);const turn=buffer.push(silence(.1));assert.ok(turn?.length);assert.equal(buffer.flush(),null);
  buffer.push(voice(2));buffer.abort();assert.equal(buffer.flush(),null);
 });
 
-test('three-second silence boundary never submits early at 16kHz, 44.1kHz or 48kHz',()=>{
+test('natural silence boundary never submits early at 16kHz, 44.1kHz or 48kHz',()=>{
  for(const rate of [16000,44100,48000]){
   const buffer=utilities().createPauseBuffer(rate);buffer.push(new Float32Array(rate).fill(.1));
-  assert.equal(buffer.push(new Float32Array(rate*3-1)),null);
+  assert.equal(buffer.push(new Float32Array(Math.ceil(rate*.9)-1)),null);
   assert.ok(buffer.push(new Float32Array(1))?.length);
  }
 });
