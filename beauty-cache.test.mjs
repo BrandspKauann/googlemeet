@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 test('beauty reinstalls only its cache, checks hashes, resumes failures and repairs corrupt resources',async()=>{
  const savedFetch=globalThis.fetch,savedCaches=globalThis.caches,stores=new Map([['aula-beauty-resources-v1',new Map([['old',new Response('old')]])],['classroom-private-data',new Map([['keep',new Response('keep')]])]]),requests=[];
  const resources={'/openmakeup/assets/a.bin':'resource-a','/openmakeup/assets/b.bin':'resource-b'};
- const manifest={version:'20261031-reinstall1',files:Object.entries(resources).map(([url,text])=>({url,bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')}))};
+ const manifest={version:'20261118-face1',files:Object.entries(resources).map(([url,text])=>({url,bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')}))};
  globalThis.caches={keys:async()=>[...stores.keys()],delete:async key=>stores.delete(key),open:async name=>{if(!stores.has(name))stores.set(name,new Map());const store=stores.get(name);return {match:async key=>store.get(key)?.clone(),put:async(key,response)=>store.set(key,response.clone()),delete:async key=>store.delete(key)}}};
  let fail=true;
  globalThis.fetch=async(url,options)=>{requests.push({url,options});if(url.startsWith('/openmakeup/download.json'))return Response.json(manifest);if(url.endsWith('b.bin')&&fail)return new Response('offline',{status:503});return new Response(resources[url])};

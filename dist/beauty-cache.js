@@ -1,4 +1,4 @@
-export const VERSION='20261031-reinstall1';
+export const VERSION='20261118-face1';
 export const CACHE='aula-beauty-resources-'+VERSION;
 const nativeFetch=globalThis.fetch.bind(globalThis),pending=new Map();
 let preparation,controller,migration;

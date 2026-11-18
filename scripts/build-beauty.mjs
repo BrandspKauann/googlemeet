@@ -15,9 +15,9 @@ fs.mkdirSync('dist/openmakeup/runtime/v1',{recursive:true});
 fs.copyFileSync('node_modules/@mediapipe/tasks-vision/vision_bundle.mjs','dist/openmakeup/runtime/v1/vision_bundle.mjs');
 fs.cpSync('node_modules/@mediapipe/tasks-vision/wasm','dist/openmakeup/runtime/v1/wasm',{recursive:true});
 fs.copyFileSync('browser-beauty/BACKGROUND-LICENSE.txt','dist/openmakeup/runtime/v1/LICENSE.txt');
-const files=fs.readdirSync('dist/openmakeup/assets',{recursive:true}).filter(file=>fs.statSync('dist/openmakeup/assets/'+file).isFile()).map(file=>'/openmakeup/assets/'+file.replaceAll('\\','/'));
+const files=fs.readdirSync('dist/openmakeup/assets',{recursive:true}).filter(file=>fs.statSync('dist/openmakeup/assets/'+file).isFile()).map(file=>'/openmakeup/assets/'+file.replaceAll('\\','/')).filter(url=>url.endsWith('/face_landmarker.task'));
 
 files.push('/openmakeup/runtime/v1/vision_bundle.mjs');
 for(const name of fs.readdirSync('dist/openmakeup/runtime/v1/wasm'))files.push('/openmakeup/runtime/v1/wasm/'+name);
-for(const name of ['gray','origin','skin','light'])files.push('/gpupixel/lookup_'+name+'.png');
-fs.writeFileSync('dist/openmakeup/download.json',JSON.stringify({version:'20261031-reinstall1',files:files.map(url=>{const bytes=fs.readFileSync('dist'+url);return {url,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};})}));
+
+fs.writeFileSync('dist/openmakeup/download.json',JSON.stringify({version:'20261118-face1',files:files.map(url=>{const bytes=fs.readFileSync('dist'+url);return {url,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};})}));

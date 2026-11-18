@@ -1,0 +1,3 @@
+https://github.com/ctbot000/face-beautifier
+Revision: ca5ad40b58e2d0133de6b22282b29000d3667046
+MIT. Local changes: local MediaPipe/model URLs; retained WebGL drawing buffer for captureStream.
