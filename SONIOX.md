@@ -1,0 +1,15 @@
+# Soniox no Aula Global — 21/11/2026
+
+A chave de projeto fica em SONIOX_API_KEY no servidor de produção. A cópia local usa proteção Windows DPAPI e está ignorada pelo Git. A integração usa api.soniox.com e stt-rt.soniox.com, região Estados Unidos. Nenhuma chave permanente é incluída nos arquivos do site, histórico ou registros.
+
+Ao ligar o microfone, um participante aprovado solicita POST /api/rooms/{id}/soniox. O servidor valida participação, sala aberta e limite de quatro solicitações por minuto por participante; emite chave temporária de uso único válida para iniciar a conexão por 60 segundos, com sessão limitada a duas horas. O navegador envia PCM mono 16 kHz continuamente por WebSocket ao modelo stt-rt-v6 e recebe original e tradução. O destino segue os idiomas definidos na sala. Não depende do Docker.
+
+Os balões exibem resultados provisórios. Os tokens finais são agrupados pelos marcadores de conclusão do provedor; ao desligar o microfone a conexão é finalizada e aguarda a confirmação finished antes de concluir o salvamento. Interrupções, falta de saldo e sobrecarga são informadas; o áudio da chamada continua ativo. Não troca automaticamente para outro provedor pago. Textos digitados e registros anteriores sem tradução não são enviados à antiga tradução Docker quando Soniox está selecionada: o original é preservado com indicação da tradução pendente.
+
+Original, rawText e traduções retornadas pela Soniox seguem juntos no conteúdo AES-GCM da sala antes de serem salvos. O download bilíngue usa essas traduções, inclusive após recarregar a página, sem gerar nova tradução. Prévias usam o canal criptografado existente. O Aula Global não persiste áudio. Os serviços da Soniox recebem áudio para processamento conforme as condições do provedor.
+
+Validações: suíte completa de 81 testes passou antes do último ajuste de cancelamento; sete testes Soniox passaram após o ajuste. Cobertura: credencial temporária sem expor segredo, permissões de aluno, sala encerrada, limite de chamadas, idioma definido no servidor, tokens provisórios substituídos, parada com conclusão, saldo insuficiente e cancelamento durante preparação. Chrome com duas sessões e resposta Soniox simulada: original e tradução nos dois sentidos, prévias, persistência após reload, ausência de chamadas a ASR/tradutor Docker e nenhum erro JavaScript. Build passou.
+
+A chave real foi aceita na emissão de credencial temporária. Uma primeira tentativa com WAV sintético retornou organization_balance_exhausted. Após o usuário informar adição de saldo e pedir para testar pessoalmente, não executei novos testes pagos. Portanto qualidade, atraso, conectividade internacional e saldo atual não foram verificados nesta entrega. O health público sinaliza configuração, com billingVerified=false, e não comprova inferência nem saldo.
+
+Referências: https://docs.soniox.com/api-reference/auth/create_temporary_api_key ; https://docs.soniox.com/api-reference/stt/websocket-api ; https://docs.soniox.com/translation/stt-translation/rt-translation

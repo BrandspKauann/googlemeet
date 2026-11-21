@@ -23,6 +23,7 @@
    catch{}finally{busy=false;pump();}
   }
   function preview(text,turnId){if(closed||!text?.trim())return;const draft=packet(text.slice(-500),turnId);show(self(),draft);send(draft);pending=draft;pump();}
+  function supplied(text,translated,turnId){if(closed||!text?.trim())return;const draft={...packet(text.slice(-2000),turnId),...(translated?{translated}:{} )};show(self(),draft);send(draft);}
   function seal(turnId){sealed.add(turnId);if(pending?.turnId===turnId)pending=null;}
   function settled(turnId){sealed.delete(turnId);pump();}
   function final(text,turnId){
@@ -40,7 +41,7 @@
   function confirmed(memberId,turnId){if(turnId){done.add(memberId+':'+turnId);while(done.size>256)done.delete(done.values().next().value);}const d=drafts.get(memberId);if(d&&(!turnId||d.turnId===turnId)){clearTimer(d.timer);drafts.delete(memberId);}}
   function resetPeer(memberId){const d=drafts.get(memberId);if(d){clearTimer(d.timer);drafts.delete(memberId);}latest.delete(memberId);}
   function close(){closed=true;pending=null;for(const d of drafts.values())clearTimer(d.timer);drafts.clear();for(const e of cache.values()){clearTimer(e.timer);e.reject?.(Error('Aula encerrada.'));}cache.clear();done.clear();sealed.clear();latest.clear();}
-  return {preview,seal,settled,final,receive,confirmed,resetPeer,cachedTranslate,has:role=>[...drafts.values()].some(d=>d.member.role===role),close};
+  return {preview,supplied,seal,settled,final,receive,confirmed,resetPeer,cachedTranslate,has:role=>[...drafts.values()].some(d=>d.member.role===role),close};
  }
  window.liveCaptionFactory={create};
 })();

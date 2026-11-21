@@ -95,3 +95,17 @@ test('PostgreSQL cloud API isolates rooms, persists sessions, pages encrypted sp
   const late=await req(route+'/transcript',await speech('recognized-before-close'),r.token);assert.equal(late.status,200);assert.equal((await req(route+'/join',{name:'late'})).status,409);
  }finally{await new Promise(r=>app.close(r));await db.close()}
 });
+
+test('Soniox temporary credentials require an approved member, ignore requested languages and reject ended rooms',async()=>{
+ const db=new PGlite();await db.exec(fs.readFileSync(new URL('./db/schema.sql',import.meta.url),'utf8'));const calls=[];
+ const sonioxRelay={configured:()=>true,session:async(member,room)=>{calls.push({member,room});return {apiKey:'temporary-key',target:member.role==='teacher'?room.student_language:room.teacher_language}}};
+ const server=http.createServer(createCloudHandler(()=>db,{sonioxRelay}));await new Promise(r=>server.listen(0,'127.0.0.1',r));const root='http://127.0.0.1:'+server.address().port;
+ const api=(path,data,headers={})=>fetch(root+'/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...headers},body:data===undefined?undefined:JSON.stringify(data)});
+ try{const cfg=await(await api('config')).json();assert.equal(cfg.speechProvider,'soniox');assert.equal(cfg.remoteASR,true);assert.ok(!JSON.stringify(cfg).includes('apiKey'));
+ const auth=await api('auth',{mode:'register',name:'Teacher',email:'soniox-auth@example.test',password:'test-password'}),cookie=auth.headers.get('set-cookie').split(';')[0];const room=await(await api('rooms',{language:'zh',targetLanguage:'pt'},{Cookie:cookie})).json(),route='rooms/'+room.id;const teacher={Authorization:'Bearer '+room.token};
+ const student=await(await api(route+'/join',{name:'Student'})).json(),studentAuth={Authorization:'Bearer '+student.token};assert.equal((await api(route+'/soniox',{})).status,401);assert.equal((await api(route+'/soniox',{},studentAuth)).status,403);assert.equal(calls.length,0);await api(route+'/admit',{id:student.you.id,accept:true},teacher);assert.equal((await api(route+'/soniox',undefined,teacher)).status,405);
+ const response=await api(route+'/soniox',{target:'en'},studentAuth);assert.equal(response.status,200);assert.equal((await response.json()).target,'zh');assert.equal(calls[0].member.language,'pt');
+ for(let i=0;i<3;i++)assert.equal((await api(route+'/soniox',{},studentAuth)).status,200);assert.equal((await api(route+'/soniox',{},studentAuth)).status,429);
+ await db.query('UPDATE ag_rooms SET ended_at=now() WHERE id=$1',[room.id]);assert.equal((await api(route+'/soniox',{},teacher)).status,409);
+ }finally{await new Promise(r=>server.close(r));await db.close()}
+});

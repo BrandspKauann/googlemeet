@@ -3,6 +3,7 @@
  const clearRetry=()=>{clearTimeout(retry);retry=undefined};
  async function prepare(){return window.localASR.prepare()}
  async function start(stream,config){
+  if(config.provider==='soniox'){mode='soniox';return window.sonioxASR.start(stream,config);}
   mode=window.localASR.engine();if(mode!=='browser')return window.localASR.start(stream,config);
   const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!Recognition){config.status?.('Áudio conectado; reconhecimento indisponível. Abra a aula no Chrome ou Edge.');await config.gap('Transcrição automática indisponível para este participante.');return {unavailable:true}}
@@ -51,11 +52,12 @@
  }
  async function stop(){
   active=false;session=null;clearRetry();
+  if(mode==='soniox'){await window.sonioxASR.stop();return;}
   if(mode!=='browser'){generation++;await window.localASR.stop();return}
   if(!native){generation++;return;}
   await new Promise(resolve=>{let done=false;const timer=setTimeout(finish,2000);const ended=native.onend;function finish(){if(done)return;done=true;clearTimeout(timer);resolve()}native.onend=()=>{ended?.();finish()};try{native.stop()}catch{finish()}});generation++;
  }
- function abort(){active=false;generation++;session=null;clearRetry();try{native?.abort()}catch{}native=null;window.localASR.abort()}
+ function abort(){active=false;generation++;session=null;clearRetry();try{native?.abort()}catch{}native=null;window.sonioxASR?.abort();window.localASR.abort()}
  window.addEventListener?.('online',()=>{if(session?.isFailed())session.reconnect()});
- window.speechEngine={prepare,start,stop,abort,retry:()=>session?.reconnect()};
+ window.speechEngine={prepare,start,stop,abort,retry:()=>mode==='soniox'?window.dispatchEvent(new Event('aula-recognition-ready')):session?.reconnect()};
 })();
