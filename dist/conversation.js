@@ -3,6 +3,7 @@
  const list=document.createElement('div');list.id='conversationLog';list.className='conversation-log';list.setAttribute('role','log');list.setAttribute('aria-label','Histórico da conversa');list.setAttribute('aria-live','polite');list.setAttribute('aria-relevant','additions text');
  const empty=document.createElement('p');empty.className='conversation-empty';empty.textContent='As falas da professora e do aluno aparecem aqui, na ordem da conversa.';list.append(empty);caption.append(list);
  const actions=document.createElement('div');actions.id='conversationHistoryActions';caption.querySelector('.caption-heading').after(actions);
+ const voice=document.createElement('p');voice.id='conversationVoiceStatus';voice.setAttribute('role','status');voice.hidden=true;actions.after(voice);const media=document.getElementById('mediaStatus');const showVoice=()=>{voice.textContent=media.textContent;voice.hidden=!voice.textContent;};new MutationObserver(showVoice).observe(media,{childList:true,subtree:true,characterData:true});showVoice();
  const newer=document.createElement('button');newer.id='conversationLatest';newer.type='button';newer.textContent='Novas mensagens ↓';newer.hidden=true;caption.append(newer);
  let follow=true;const entries=new Map(),drafts=new Map();let sequence=0;
  list.addEventListener('scroll',()=>{follow=list.scrollHeight-list.clientHeight-list.scrollTop<55;if(follow)newer.hidden=true;});newer.onclick=()=>{follow=true;list.scrollTop=list.scrollHeight;newer.hidden=true;};

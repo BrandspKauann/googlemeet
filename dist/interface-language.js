@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Microfone desligado. Ligue para transcrever e traduzir.':'麦克风已关闭，打开后即可转写和翻译。','Preparando as legendas do seu microfone…':'正在准备麦克风字幕…','Microfone ligado. Transcrição e tradução em tempo real pela Soniox.':'麦克风已开启，Soniox 正在进行实时转写和翻译。',
     'Novas mensagens ↓':'新消息 ↓','Histórico da conversa':'对话记录','As falas da professora e do aluno aparecem aqui, na ordem da conversa.':'老师和学生的发言将按顺序显示在这里。',
     'Recursos do filtro prontos neste navegador.':'美颜资源已在此浏览器中准备就绪。',
     'Microfone ligado. Tradução simultânea ativa; prévias são revisadas nas pausas.':'麦克风已开启。实时翻译已启用，停顿时会校正预览。',

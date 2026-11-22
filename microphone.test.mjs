@@ -22,3 +22,7 @@ test('recognition startup failure leaves microphone connected',async()=>{
 test('capture permission failure is reported and microphone stays off',async()=>{
   const s=setup();s.context.navigator.mediaDevices.getUserMedia=async()=>{throw Error('permission denied')};await assert.rejects(s.context.startMic(),/permission denied/);assert.equal(s.context.audioStream,null);assert.equal(s.calls(),0);assert.match(s.element('mediaStatus').textContent,/Não foi possível ligar o microfone/);
 });
+
+test('Soniox primes caption audio before waiting for microphone permission and exposes retry on startup failure',async()=>{
+ const s=setup();let prepared=false;s.context.profile.speechProvider='soniox';s.localASR.engine=()=> 'server';s.context.window.sonioxASR={prepareCapture(){prepared=true},abort(){}};s.context.navigator.mediaDevices.getUserMedia=async()=>{assert.equal(prepared,true);return s.stream};s.setFailure(Error('captura pausada'));await s.context.startMic();assert.equal(s.context.audioStream,s.stream);assert.equal(s.element('retryCaptions').hidden,false);assert.equal(s.track.stopped,false);assert.match(s.element('mediaStatus').textContent,/captura pausada/);
+});

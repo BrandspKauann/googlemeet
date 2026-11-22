@@ -43,7 +43,7 @@ function renderState(){
  if(state.ending){$('roomStatus').textContent='Salvando os últimos trechos…';if(!closing){closing=true;stopMic().then(async()=>{for(const [key,b]of pendingWrites)await sendRecord(b,key);if(!pendingWrites.size)await api('flush',{})}).catch(()=>{})}}
  if(approved&&lastApproval!=='accepted'&&!state.ended)updateTracks().catch(e=>toast(e.message));lastApproval=me.status;
  const online=state.members.filter(m=>m.online&&m.status==='accepted');$('count').textContent=online.length+(online.length===1?' pessoa':' pessoas');$('emptyRoom').hidden=online.some(m=>m.id!==me.id);$('selfTile').hidden=me.status==='rejected';
- for(const id of ['mic','share','sendMessage','prepareTranslate'])$(id).disabled=!approved||state.ended||state.ending;
+ for(const id of ['mic','share','sendMessage','prepareTranslate'])$(id).disabled=!approved||state.ended||state.ending||(id==='mic'&&!!micOperation);
  $('leave').disabled=state.ended;$('waitingRequests').replaceChildren();
  if(me.role==='teacher'&&!state.ended)for(const m of state.members.filter(m=>m.status==='pending'&&m.online)){
   const div=document.createElement('div');div.className='request';const span=document.createElement('span');span.textContent=m.name+' quer entrar';const yes=document.createElement('button');yes.textContent='Aceitar';yes.className='primary';const no=document.createElement('button');no.textContent='Recusar';yes.onclick=()=>busy(yes,()=>api('admit',{id:m.id,accept:true}));no.onclick=()=>busy(no,()=>api('admit',{id:m.id,accept:false}));div.append(span,yes,no);$('waitingRequests').append(div);
@@ -126,7 +126,7 @@ async function startRecognition(stream){
   if(engine==='paraformer'&&!['zh','en'].includes(state.you.language))throw Error('Paraformer reconhece mandarim e inglês. Escolha outro motor com o microfone desligado.');
   if((engine==='paraformer'&&!window.paraformerASR?.ready())||(engine==='device'&&!window.deviceASR?.ready()))throw Error('Clique em Preparar reconhecimento para ativar as legendas.');
   window.localASR?.setActive(true);
-  if(profile?.speechProvider==='soniox')window.sonioxASR?.abort();
+  if(profile?.speechProvider==='soniox'){window.sonioxASR?.abort({keepPrepared:true});window.sonioxASR?.prepareCapture?.();}
   const liveSession=crypto.randomUUID();
   const result=await window.speechEngine.start(stream,{provider:profile?.speechProvider,session:()=>api('soniox',{}),language:state.you.language,status:t=>$('mediaStatus').textContent=t,reconnect:show=>{$('retryCaptions').hidden=!show;if(show)window.captionUI?.openPanel?.()},preview:data=>profile?.speechProvider==='soniox'?liveCaptions.supplied(data.text,data.translation,liveSession+':'+data.turn):liveCaptions.preview(window.educationalQuotes?.format(data.text,state.you.language)||data.text,liveSession+':'+data.turn),sealing:data=>liveCaptions.seal(liveSession+':'+data.turn),settled:data=>liveCaptions.settled(liveSession+':'+data.turn),text:(t,meta)=>{if(profile?.speechProvider==='soniox'){const translations=meta.translation?{[meta.target]:meta.translation}:{};return postText(t,'speech',liveSession+':'+meta.turn,translations);}const id=meta?.turn?liveSession+':'+meta.turn:undefined;if(id)liveCaptions.final(window.educationalQuotes?.format(t,state.you.language)||t,id);return recognizedText(t,id);},gap:t=>postText(t,'gap'),phase:t=>window.captionUI?.phase(t),transcribe:async audio=>{const res=await fetch(`/api/rooms/${roomId}/asr`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'audio/wav'},body:audio});const data=await res.json();if(!res.ok)throw Error(data.error||'Falha no motor local.');return data;}});
   if(stream!==audioStream)return;
@@ -135,7 +135,7 @@ async function startRecognition(stream){
   window.speechEngine?.abort();if(stream!==audioStream)return;
   window.localASR?.setActive(true,true);
   $('mediaStatus').textContent='Microfone ligado, sem transcrição. '+error.message;
-  window.captionUI?.openPanel?.();const settings=document.querySelector('.recognition-settings');if(settings)settings.open=true;
+  $('retryCaptions').hidden=false;window.captionUI?.openPanel?.();const settings=document.querySelector('.recognition-settings');if(settings)settings.open=true;
   postText('Transcrição indisponível neste intervalo: '+error.message,'gap').catch(()=>{});
  }
 }
@@ -143,10 +143,12 @@ window.addEventListener('aula-recognition-ready',()=>{if(audioStream)startRecogn
 async function startMic(){
  if(state.you.status!=='accepted')return;
  try{
+  if(profile?.speechProvider==='soniox'){window.sonioxASR?.prepareCapture?.();$('mediaStatus').textContent='Preparando as legendas do seu microfone…';}
   audioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
   window.localASR?.setActive(true);await updateTracks();
   window.meetingUI.controlLabel('mic','Desligar microfone');$('mic').setAttribute('aria-pressed','true');$('mic').classList.add('selected');
  }catch(error){
+  if(profile?.speechProvider==='soniox')window.sonioxASR?.abort();
   window.localASR?.setActive(false);audioStream?.getTracks().forEach(t=>t.stop());audioStream=null;await updateTracks().catch(()=>{});
   $('mediaStatus').textContent='Não foi possível ligar o microfone. '+mediaError(error);throw Error(mediaError(error));
  }
@@ -155,9 +157,10 @@ async function startMic(){
 async function stopMic(){
  $('retryCaptions').hidden=true;
  const heartbeat=state?.incremental&&state.ending?setInterval(()=>api('state').catch(()=>{}),10000):null;
- try{audioStream?.getAudioTracks().forEach(t=>t.enabled=false);await window.speechEngine.stop();await speechGrouper.flush();audioStream?.getTracks().forEach(t=>t.stop());audioStream=null;window.localASR?.setActive(false);window.meetingUI.controlLabel('mic','Ligar microfone');$('mic').setAttribute('aria-pressed','false');$('mic').classList.remove('selected');await updateTracks().catch(()=>{})}finally{if(heartbeat)clearInterval(heartbeat)}
+ try{audioStream?.getAudioTracks().forEach(t=>t.enabled=false);await window.speechEngine.stop();await speechGrouper.flush();audioStream?.getTracks().forEach(t=>t.stop());audioStream=null;window.localASR?.setActive(false);window.meetingUI.controlLabel('mic','Ligar microfone');$('mic').setAttribute('aria-pressed','false');$('mic').classList.remove('selected');$('mediaStatus').textContent='Microfone desligado. Ligue para transcrever e traduzir.';await updateTracks().catch(()=>{})}finally{if(heartbeat)clearInterval(heartbeat)}
 }
-$('mic').onclick=()=>{if(!profile?.remoteTranslation&&!audioStream&&!$('prepareTranslate').disabled)$('prepareTranslate').click();return busy($('mic'),()=>audioStream?stopMic():startMic());};
+let micOperation;
+$('mic').onclick=()=>{if(micOperation)return micOperation;if(!profile?.remoteTranslation&&!audioStream&&!$('prepareTranslate').disabled)$('prepareTranslate').click();micOperation=busy($('mic'),()=>audioStream?stopMic():startMic()).finally(()=>micOperation=null);return micOperation;};
 $('sendMessage').onclick=()=>busy($('sendMessage'),async()=>{const text=$('message').value.trim();if(!text)return;await postText(text,'typed');$('message').value=''});
 function configureTranslationUI(){
  if(!profile?.remoteTranslation)return;
