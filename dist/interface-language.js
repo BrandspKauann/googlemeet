@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Novas mensagens ↓':'新消息 ↓','Histórico da conversa':'对话记录','As falas da professora e do aluno aparecem aqui, na ordem da conversa.':'老师和学生的发言将按顺序显示在这里。',
     'Recursos do filtro prontos neste navegador.':'美颜资源已在此浏览器中准备就绪。',
     'Microfone ligado. Tradução simultânea ativa; prévias são revisadas nas pausas.':'麦克风已开启。实时翻译已启用，停顿时会校正预览。',
     'Tradução simultânea ativa. A prévia acompanha a fala e é confirmada nas pausas.':'实时翻译已启用。预览随讲话更新，并在停顿时确认。',
