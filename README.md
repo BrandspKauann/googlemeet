@@ -82,3 +82,12 @@ padrão com GPU, ou `-Device cpu -Model base` para voltar ao modo anterior.
 A tradução permanece no servidor, e participantes não baixam modelos de voz.
 
 Veja [medições e limites da comparação](benchmarks/GPU-20261028.md).
+
+
+## Apresentação interativa
+
+Na sala, a professora pode usar **Apresentação** para abrir um PPTX, PDF ou imagens no próprio navegador (até 35 MB). As setas avançam e voltam os slides para os participantes. O arquivo não é enviado ao servidor nem salvo; os alunos recebem o vídeo dos slides por WebRTC. PPTX é estático: animações, áudio, vídeos, fontes não disponíveis e elementos complexos podem diferir. Confira a prévia ou exporte como PDF para preservar o visual. Compartilhar uma janela do PowerPoint continua disponível; o navegador não controla o aplicativo externo.
+
+Ao apresentar com a câmera ligada, a imagem da professora aparece sem fundo no canto inferior direito, com opção de ocultá-la. O recorte é processado no navegador de cada participante, em um Worker, reutilizando o modelo local de segmentação. O primeiro uso carrega os recursos do próprio site; não há envio dos quadros ao serviço de segmentação. Falha ou falta de suporte mantém uma câmera com fundo e informa a limitação.
+
+Caneta, marcador, borracha, texto, emojis, cor, espessura, desfazer e limpar estão na barra da apresentação. As anotações da professora são sincronizadas pelo canal criptografado da chamada, alinhadas ao conteúdo mesmo com zoom. Cada slide mantém suas anotações enquanto a sala está aberta (cache de até 24 páginas). São temporárias: não integram a transcrição e não sobrevivem ao fechamento da sessão da professora. Alunos que entram depois recebem o estado da página atual; outras páginas são sincronizadas quando a professora volta a elas.

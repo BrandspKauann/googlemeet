@@ -14,3 +14,19 @@ body.in-meeting{background:#f3f6fb}.in-meeting .app-header{height:58px;padding:0
 @media(max-width:650px){.caption #conversationLog{padding:7px 5px;gap:9px;border-radius:12px}.conversation-message{padding:10px 8px;width:97%;max-width:100%}.caption .conversation-primary{font-size:14px}.caption .conversation-original{font-size:12px}.conversation-author{font-size:9px}.conversation-role{font-size:8px}.conversation-author time{font-size:8px}.conversation-message>small{font-size:8px}}
 
 #conversationVoiceStatus{flex:none;margin:0 0 8px;padding:9px 11px;border:1px solid #dce5f5;border-radius:10px;background:#edf3ff;color:#365982;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+/* Presentation controls stay outside the slide, including when the viewer zooms. */
+#lessonTools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 11px;background:#f8faff;border-bottom:1px solid #e3eaf5;color:#536782;font-size:11px;flex-shrink:0}
+#lessonTools[hidden],#lessonSlides[hidden],#presenterOverlay[hidden]{display:none!important}
+#lessonTools button{min-height:32px;padding:5px 10px;border-radius:8px;font-size:11px;background:#fff}
+#lessonSlides{display:flex;align-items:center;gap:5px}#lessonPage{font-variant-numeric:tabular-nums;min-width:42px;text-align:center}
+.presenter-toggle{display:flex;align-items:center;gap:5px;white-space:nowrap;margin:0}.presenter-toggle input{width:auto;margin:0}
+#lessonStatus{font-size:10px;line-height:1.4;flex:1;min-width:120px;color:#6e7f98}
+#screenStage>.lesson-annotations-toolbar{position:relative;inset:auto;margin:0;max-width:none;border:0;border-bottom:1px solid #e3eaf5;border-radius:0;box-shadow:none;padding:6px 10px;flex-shrink:0;font-size:12px}
+#lessonContent{position:absolute;pointer-events:none;transform-origin:center;isolation:isolate}
+#presenterOverlay{position:absolute;z-index:4;right:1.5%;bottom:1.5%;width:24%;max-width:280px;min-width:70px;aspect-ratio:4/3;pointer-events:none;overflow:hidden}
+#presenterCanvas{display:block;width:100%;height:100%;object-fit:contain;background:transparent}
+.presenter-caption{position:absolute;left:50%;bottom:3px;transform:translateX(-50%);max-width:100%;width:max-content;padding:3px 7px;border-radius:6px;color:#fff;background:#17263ba8;font-size:10px;line-height:1.35;text-align:center;overflow-wrap:anywhere}
+#presenterOverlay.fallback{border-radius:12px;background:#263447;box-shadow:0 2px 12px #0003}
+@media(max-width:700px){#lessonTools{padding:5px 7px;gap:5px}.presenter-toggle{font-size:10px}#lessonStatus{flex-basis:100%;font-size:9px}#screenStage>.lesson-annotations-toolbar{padding:4px 6px;gap:3px}#screenStage>.lesson-annotations-toolbar button{min-height:29px;padding:3px 6px}.presenter-caption{font-size:8px;padding:2px 4px}#presenterOverlay{width:28%}.room-actions{flex-wrap:wrap;justify-content:flex-end}}
+
+.presenting .tile.presenter-duplicate{display:none}

@@ -14,3 +14,6 @@ dist/asr-licenses.txt
 
 dist/openmakeup/
 dist/background-runtime/
+
+dist/presenter-runtime/
+dist/lesson-runtime/

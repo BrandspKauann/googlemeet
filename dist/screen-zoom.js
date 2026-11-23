@@ -7,7 +7,7 @@
   stage.querySelector('.screenhead').after(toolbar);
   const el=id=>document.getElementById(id);let scale=1,x=0,y=0,drag=null,source;
   function clamp(){const width=viewport.clientWidth,height=viewport.clientHeight,fit=video.videoWidth&&video.videoHeight?Math.min(width/video.videoWidth,height/video.videoHeight):0;const maxX=Math.max(0,(video.videoWidth*fit*scale-width)/2),maxY=Math.max(0,(video.videoHeight*fit*scale-height)/2);x=Math.min(maxX,Math.max(-maxX,x));y=Math.min(maxY,Math.max(-maxY,y));}
-  function draw(){clamp();video.style.transform=`translate(${x}px, ${y}px) scale(${scale})`;viewport.classList.toggle('zoomed',scale>1);viewport.classList.toggle('dragging',!!drag);}
+  function draw(){clamp();video.style.transform=`translate(${x}px, ${y}px) scale(${scale})`;viewport.classList.toggle('zoomed',scale>1);viewport.classList.toggle('dragging',!!drag);viewport.dispatchEvent(new CustomEvent('screenviewchange',{detail:{scale,x,y}}));}
   function zoom(value){scale=Math.max(1,Math.min(4,Math.round(value*4)/4));if(scale===1){x=0;y=0;drag=null}draw();el('zoomLevel').textContent=Math.round(scale*100)+'%';el('zoomOut').disabled=scale===1;el('zoomIn').disabled=scale===4;el('zoomHint').textContent=scale>1?'Arraste o conteúdo para mover.':'Só muda a sua visualização.';}
   function reset(){x=0;y=0;drag=null;zoom(1)}
   function sync(){const receiving=!stage.hidden&&stop.hidden;toolbar.hidden=!receiving;if(!receiving){if(stage.hidden)source=null;reset()}}

@@ -4,10 +4,10 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test camera.test.mjs soniox.test.mjs live-audio.test.mjs live-captions.test.mjs server.test.mjs local-asr.test.mjs cloud.test.mjs durable-security.test.mjs educational-quotes.test.mjs browser-asr.test.mjs paraformer-asr.test.mjs language-routing.test.mjs worker-beauty.test.mjs microphone.test.mjs asr-relay.test.mjs translation-relay.test.mjs remote-translation.test.mjs background-blur.test.mjs beauty-cache.test.mjs",
+    "test": "node --test camera.test.mjs soniox.test.mjs live-audio.test.mjs live-captions.test.mjs server.test.mjs local-asr.test.mjs cloud.test.mjs durable-security.test.mjs educational-quotes.test.mjs browser-asr.test.mjs paraformer-asr.test.mjs language-routing.test.mjs worker-beauty.test.mjs microphone.test.mjs asr-relay.test.mjs translation-relay.test.mjs remote-translation.test.mjs background-blur.test.mjs beauty-cache.test.mjs lesson-annotations.test.mjs lesson-deck.test.mjs presenter-camera.test.mjs",
     "dev:cloud": "node dev-cloud.mjs",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate-db.mjs",
-    "build": "node scripts/build-browser-asr.mjs && node scripts/build-beauty.mjs && node scripts/build-background.mjs",
+    "build": "node scripts/build-browser-asr.mjs && node scripts/build-beauty.mjs && node scripts/build-background.mjs && node scripts/build-presenter.mjs && node scripts/build-lesson-deck.mjs",
     "prestart": "npm run build",
     "predev:cloud": "npm run build"
   },
@@ -17,7 +17,10 @@
     "@mediapipe/face_mesh": "0.4.1633559619",
     "@mediapipe/tasks-vision": "1.0.1",
     "@neondatabase/serverless": "^1.2.0",
+    "@office-kit/pptx": "0.30.0",
+    "@office-kit/pptx-preview": "0.23.0",
     "open-makeup-sdk": "0.1.0",
+    "pdfjs-dist": "6.5.438",
     "three": "0.184.0"
   },
   "devDependencies": {

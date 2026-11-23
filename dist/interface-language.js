@@ -1,5 +1,6 @@
 (() => {
   const dictionary={
+    'Apresentação':'演示文稿','Abrir apresentação':'打开演示文稿','Slide anterior':'上一页','Próximo slide':'下一页','Câmera na apresentação':'在演示中显示摄像头','Anotar apresentação':'演示批注','Caneta':'画笔','Marca-texto':'荧光笔','Apagar':'橡皮擦','Texto':'文字','Emojis':'表情','Navegar':'浏览','Desfazer última anotação':'撤销上一次批注','Limpar anotações desta página':'清除此页批注','Limpar':'清除','Adicionar':'添加','Cancelar':'取消','Escreva na apresentação…':'在演示上输入文字…','Parar apresentação':'停止演示','Apresentação da professora':'老师的演示文稿',
     'Microfone desligado. Ligue para transcrever e traduzir.':'麦克风已关闭，打开后即可转写和翻译。','Preparando as legendas do seu microfone…':'正在准备麦克风字幕…','Microfone ligado. Transcrição e tradução em tempo real pela Soniox.':'麦克风已开启，Soniox 正在进行实时转写和翻译。',
     'Novas mensagens ↓':'新消息 ↓','Histórico da conversa':'对话记录','As falas da professora e do aluno aparecem aqui, na ordem da conversa.':'老师和学生的发言将按顺序显示在这里。',
     'Recursos do filtro prontos neste navegador.':'美颜资源已在此浏览器中准备就绪。',
