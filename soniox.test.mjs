@@ -18,7 +18,7 @@ test('request timeout creates a fresh session automatically and preserves unique
  const s=harness(true);await s.api.start({},s.config);s.sockets[0].message({tokens:[token('Olá'),token('你好',true,'translation'),token('<end>')]});await tick();const first=s.texts[0].m.turn;
  s.sockets[0].message({error_code:408,error_type:'request_timeout'});assert.equal(s.sockets[0].readyState,3);await s.advance(2000);assert.equal(s.sockets.length,2);s.sockets[1].message({tokens:[token('Bom dia'),token('早上好',true,'translation'),token('<end>')]});await tick();assert.notEqual(s.texts[1].m.turn,first);assert.equal(s.nodes.length,2);s.api.abort();assert.equal(s.intervals.size,0);
 });
-test('automatic retries stop after three attempts and billing errors never trigger retries',async()=>{
+test('automatic retries back off after three quick attempts and billing errors never trigger retries',async()=>{
  const s=harness(true);await s.api.start({},s.config);for(const delay of [2000,4000,8000]){s.sockets.at(-1).message({error_code:408,error_type:'request_timeout'});await s.advance(delay)}assert.equal(s.sockets.length,4);s.sockets.at(-1).message({error_code:408,error_type:'request_timeout'});await s.advance(9000);assert.equal(s.sockets.length,4);s.api.abort();
  const billing=harness(true);await billing.api.start({},billing.config);billing.sockets[0].message({error_code:402,error_type:'organization_balance_exhausted'});await billing.advance(9000);assert.equal(billing.sockets.length,1);billing.api.abort();
 });
@@ -34,4 +34,15 @@ test('audio capture primed by the microphone click is reused after the credentia
 });
 test('a browser that never resumes caption audio fails visibly within five seconds instead of hanging silently',async()=>{
  const s=harness(true);s.blockResume();const started=s.api.start({},s.config);const checked=assert.rejects(started,/navegador pausou/);await tick();await tick();await s.advance(5000);await checked;assert.equal(s.contexts[0].state,'closed');assert.equal(s.sockets[0].readyState,3);assert.equal(s.intervals.size,0);s.blockResume(false);await s.api.start({},s.config);s.api.abort();
+});
+
+
+test('temporary key outages retry again after a failed reconnect and cancel cleanly',async()=>{
+ const s=harness(true);let attempts=0;s.config.session=async()=>{if(++attempts<3)throw Object.assign(Error('serviço temporariamente indisponível'),{status:503});return {url:'wss://example.test',apiKey:'temporary',target:'pt',config:{}};};const result=await s.api.start({},s.config);assert.equal(result.unavailable,true);assert.equal(s.sockets.length,0);await s.advance(2000);assert.equal(attempts,2);await s.advance(4000);assert.equal(s.sockets.length,1);s.api.abort();await s.advance(100000);assert.equal(attempts,3);
+});
+test('caption outages recover after a cooling period instead of staying silent for the rest of class',async()=>{
+ const s=harness(true);await s.api.start({},s.config);for(const delay of [2000,4000,8000]){s.sockets.at(-1).message({error_code:408,error_type:'request_timeout'});await s.advance(delay);}s.sockets.at(-1).message({error_code:408,error_type:'request_timeout'});await s.advance(9000);assert.equal(s.sockets.length,4);await s.advance(60000);assert.equal(s.sockets.length,5);s.api.abort();
+});
+test('usage sums only completed records belonging to this room and never exposes other billing records',async()=>{
+ const room={id:'1'.repeat(48),started_at:new Date(Date.now()-3600000).toISOString()},member='2'.repeat(48);let calls=0;const api=createSonioxRelay({getKey:()=> 'private-key',fetcher:async(url,options)=>{calls++;assert.match(url,/usage-logs/);assert.ok(new URL(url).searchParams.has('start_time'));assert.equal(options.headers.Authorization,'Bearer private-key');return Response.json({usage_logs:[{uuid:'own',client_reference_id:'aula:'+room.id+':'+member,cost_usd:'0.0321',input_audio_duration_ms:60000},{uuid:'own',client_reference_id:'aula:'+room.id+':'+member,cost_usd:'0.0321',input_audio_duration_ms:60000},{uuid:'other',client_reference_id:'aula:'+('3'.repeat(48))+':'+member,cost_usd:'80',input_audio_duration_ms:99999},{uuid:'invalid',client_reference_id:'aula:'+room.id+':bad',cost_usd:'99',input_audio_duration_ms:1000}],next_page_cursor:null});}});const result=await api.usage(room);assert.equal(result.costUsd,0.0321);assert.equal(result.audioMs,60000);assert.equal(result.sessions,1);assert.equal(result.finalizedOnly,true);assert.equal(JSON.stringify(result).includes('private-key'),false);assert.equal(JSON.stringify(result).includes('other'),false);assert.deepEqual(await api.usage(room),result);assert.equal(calls,1);
 });

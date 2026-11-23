@@ -13,16 +13,18 @@
   function object(value) {
     if (!value || typeof value !== 'object' || !validId(value.id)) return null;
     const {id, kind} = value;
+    if (value.owner !== undefined && (typeof value.owner !== 'string' || !/^[a-zA-Z0-9_.:-]{1,64}$/.test(value.owner))) return null;
+    const ownership = value.owner === undefined ? {} : {owner: value.owner};
     if (kind === 'pen' || kind === 'marker') {
       const points = cleanPoints(value.points);
       if (!points || !/^#[\da-f]{6}$/i.test(value.color) || !Number.isFinite(value.width) || value.width < 1 || value.width > 12) return null;
-      return {id, kind, color: value.color, width: value.width, points};
+      return {id, kind, ...ownership, color: value.color, width: value.width, points};
     }
     if (kind !== 'text' && kind !== 'emoji') return null;
     if (!point([value.x, value.y]) || typeof value.text !== 'string' || !value.text.trim() || value.text.length > LIMIT.text) return null;
     if (kind === 'emoji' && !EMOJI.includes(value.text)) return null;
     if (!/^#[\da-f]{6}$/i.test(value.color)) return null;
-    return {id, kind, color: value.color, x: round(value.x), y: round(value.y), text: value.text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '')};
+    return {id, kind, ...ownership, color: value.color, x: round(value.x), y: round(value.y), text: value.text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '')};
   }
   function packet(value) {
     if (!value || typeof value !== 'object' || value.v !== 1 || !validPage(value.page)) return null;
@@ -37,7 +39,7 @@
     }
     return null;
   }
-  function attach({container, canEdit = () => false, send = () => {}, onStatus = () => {}} = {}) {
+  function attach({container, canEdit = () => false, identity = () => 'local', canEditObject = () => true, canClearAll = () => true, send = () => {}, onStatus = () => {}} = {}) {
     if (!container || typeof container.append !== 'function') throw new TypeError('Informe a área da apresentação.');
     let dead = false, pageId = 'screen', tool = '', color = '#2563eb', width = 3, chosenEmoji = EMOJI[0];
     let drawing = null, flushTimer = null, editPosition = null, sequence = 0;
@@ -61,7 +63,16 @@
       return pages.get(pageId);
     }
     const pointsIn = entries => Array.from(entries.values()).reduce((sum, entry) => sum + (entry.points?.length || 0), 0);
-    const id = () => `${prefix}-${++sequence}`;
+    const owner = () => { const value = String(identity()); return /^[a-zA-Z0-9_.:-]{1,64}$/.test(value) ? value : 'local'; };
+    const id = () => `${owner()}:${prefix}-${++sequence}`;
+    const editable = entry => { try { return !!entry && !!canEditObject(entry); } catch { return false; } };
+    const mayClearAll = () => { try { return !!canClearAll(); } catch { return false; } };
+    function mayMutate(value) {
+      if (!allowed()) return false;
+      if (value.type === 'clear') return mayClearAll();
+      if (value.type === 'upsert') return editable(value.object) && (!state().objects.has(value.object.id) || editable(state().objects.get(value.object.id)));
+      return editable(state().objects.get(value.id));
+    }
     const wrap = (type, data = {}) => ({v: 1, page: pageId, type, ...data});
     function transmit(value) {
       if (!allowed()) return false;
@@ -114,7 +125,7 @@
     container.append(style, surface, toolbar, editor);
     function syncPermission() {
       toolbar.hidden = !allowed();
-      if (!allowed() && tool) { finish(false); closeText(); tool = ''; surface.setAttribute('data-editing', 'false'); }
+      if (!allowed()) { finish(false); closeText(); tool = ''; surface.setAttribute('data-editing', 'false'); controls.forEach((button, key) => button.setAttribute('aria-pressed', String(!key))); palette.hidden = true; }
     }
     function draw(entry) {
       const {width: w, height: h} = dimensions;
@@ -144,6 +155,7 @@
     function apply(value, remote = false) {
       const safe = packet(value);
       if (dead || !safe || safe.page !== pageId) return false;
+      if (remote && drawing && (safe.type === 'clear' || safe.type === 'remove' && safe.id === drawing.id)) finish(false);
       const entries = state().objects;
       if (safe.type === 'clear') { entries.clear(); surface.replaceChildren(); rendered.clear(); }
       if (safe.type === 'remove') { entries.delete(safe.id); rendered.get(safe.id)?.remove(); rendered.delete(safe.id); }
@@ -157,10 +169,9 @@
         if (!old?.points || old.points.length !== safe.start || pointsIn(entries) + safe.points.length > LIMIT.totalPoints) return false;
         old.points.push(...safe.points); paint(old);
       }
-      if (remote) state().undo = [];
       syncPermission(); undo.disabled = !state().undo.length; return true;
     }
-    function local(value) { if (!allowed() || !apply(value)) { status('Limite de anotações atingido. Limpe a página para continuar.'); return false; } transmit(value); return true; }
+    function local(value) { if (!mayMutate(value)) return false; if (!apply(value)) { status('Limite de anotações atingido. Limpe a página para continuar.'); return false; } transmit(value); return true; }
     function coordinates(event) {
       const rect = surface.getBoundingClientRect();
       const round = n => Math.round(Math.max(0, Math.min(1, n)) * 10000) / 10000;
@@ -185,6 +196,7 @@
       render();
     }
     function create(entry) {
+      entry.owner = owner();
       if (local(wrap('upsert', {object: entry}))) remember([wrap('remove', {id: entry.id})]);
       render();
     }
@@ -192,7 +204,7 @@
       const node = event.target?.closest?.('[data-annotation-id]');
       const key = node?.getAttribute('data-annotation-id');
       const old = state().objects.get(key);
-      if (old && local(wrap('remove', {id: key}))) { remember([wrap('upsert', {object: clone(old)})]); undo.disabled = false; }
+      if (editable(old) && local(wrap('remove', {id: key}))) { remember([wrap('upsert', {object: clone(old)})]); undo.disabled = false; }
     }
     listen(surface, 'pointerdown', event => {
       if (!tool || !allowed() || event.button !== 0) return;
@@ -207,7 +219,7 @@
         textarea.focus(); return;
       }
       if (drawing) finish();
-      const entry = {id: id(), kind: tool, color, width, points: [[x, y]]};
+      const entry = {id: id(), owner: owner(), kind: tool, color, width, points: [[x, y]]};
       if (!local(wrap('upsert', {object: entry}))) return;
       drawing = {id: entry.id, pointerId: event.pointerId, pending: [], sent: 1};
       try { surface.setPointerCapture(event.pointerId); } catch {}
@@ -234,12 +246,16 @@
     listen(undo, 'click', () => {
       if (!allowed()) return; finish(); closeText();
       const inverse = state().undo.pop(); if (!inverse) return;
-      inverse.forEach(value => { if (apply(value)) transmit(value); }); render();
+      inverse.forEach(value => { if (mayMutate(value) && apply(value)) transmit(value); }); render();
     });
     listen(clear, 'click', () => {
       if (!allowed()) return; finish(); closeText();
-      const inverse = Array.from(state().objects.values(), entry => wrap('upsert', {object: clone(entry)}));
-      if (inverse.length && local(wrap('clear'))) remember(inverse);
+      const selected = Array.from(state().objects.values()).filter(editable);
+      const inverse = selected.map(entry => wrap('upsert', {object: clone(entry)}));
+      if (inverse.length) {
+        if (mayClearAll()) { if (local(wrap('clear'))) remember(inverse); }
+        else { selected.forEach(entry => local(wrap('remove', {id: entry.id}))); remember(inverse); }
+      }
       render();
     });
     listen(document, 'keydown', event => { if (event.key === 'Escape' && (tool || !editor.hidden)) selectTool(''); });
@@ -250,6 +266,8 @@
     return {
       toolbar,
       surface,
+      refreshPermission: syncPermission,
+      getObject(key) { if (dead) return null; const entry = state().objects.get(key); return entry ? clone(entry) : null; },
       receive(value) { return apply(value, true); },
       snapshot() { finish(); return [wrap('clear'), ...Array.from(state().objects.values(), entry => wrap('upsert', {object: clone(entry)}))]; },
       restore(values) {
@@ -277,5 +295,5 @@
       }
     };
   }
-  window.lessonAnnotations = Object.freeze({attach});
+  window.lessonAnnotations = Object.freeze({attach, normalizePacket: packet});
 })();

@@ -1,6 +1,7 @@
 import {build} from 'esbuild';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
+fs.copyFileSync('browser-beauty/runtime.js','dist/beauty-runtime.js');
 await build({entryPoints:['browser-beauty/openmakeup.js'],outfile:'dist/openmakeup/adapter.js',bundle:true,inject:['browser-beauty/cached-fetch.js'],external:['/face-tracking/*','/beauty-cache.js'],format:'esm',platform:'browser',minify:true});
 for(const file of ['dist/openmakeup/worker.js','dist/openmakeup/tracker.js'])fs.rmSync(file,{force:true});
 fs.cpSync('node_modules/open-makeup-sdk/assets','dist/openmakeup/assets',{recursive:true});
@@ -14,6 +15,7 @@ if(!fs.existsSync(faceModel)||createHash('sha256').update(fs.readFileSync(faceMo
 fs.mkdirSync('dist/openmakeup/runtime/v1',{recursive:true});
 fs.copyFileSync('node_modules/@mediapipe/tasks-vision/vision_bundle.mjs','dist/openmakeup/runtime/v1/vision_bundle.mjs');
 fs.cpSync('node_modules/@mediapipe/tasks-vision/wasm','dist/openmakeup/runtime/v1/wasm',{recursive:true});
+await build({entryPoints:['browser-beauty/face-tracker.js'],outfile:'dist/openmakeup/runtime/v1/face-tracker.js',bundle:true,external:['/beauty-cache.js*'],format:'iife',platform:'browser',minify:true});
 fs.copyFileSync('browser-beauty/BACKGROUND-LICENSE.txt','dist/openmakeup/runtime/v1/LICENSE.txt');
 const files=fs.readdirSync('dist/openmakeup/assets',{recursive:true}).filter(file=>fs.statSync('dist/openmakeup/assets/'+file).isFile()).map(file=>'/openmakeup/assets/'+file.replaceAll('\\','/')).filter(url=>url.endsWith('/face_landmarker.task'));
 

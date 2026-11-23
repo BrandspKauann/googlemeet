@@ -91,3 +91,20 @@ Na sala, a professora pode usar **Apresentação** para abrir um PPTX, PDF ou im
 Ao apresentar com a câmera ligada, a imagem da professora aparece sem fundo no canto inferior direito, com opção de ocultá-la. O recorte é processado no navegador de cada participante, em um Worker, reutilizando o modelo local de segmentação. O primeiro uso carrega os recursos do próprio site; não há envio dos quadros ao serviço de segmentação. Falha ou falta de suporte mantém uma câmera com fundo e informa a limitação.
 
 Caneta, marcador, borracha, texto, emojis, cor, espessura, desfazer e limpar estão na barra da apresentação. As anotações da professora são sincronizadas pelo canal criptografado da chamada, alinhadas ao conteúdo mesmo com zoom. Cada slide mantém suas anotações enquanto a sala está aberta (cache de até 24 páginas). São temporárias: não integram a transcrição e não sobrevivem ao fechamento da sessão da professora. Alunos que entram depois recebem o estado da página atual; outras páginas são sincronizadas quando a professora volta a elas.
+
+
+## Ajustes da professora (23/11/2026)
+
+- **Áudio e vídeo:** seleção de câmera (inclusive externa/virtual), microfone e saída de áudio quando suportada, HD/Full HD e resolução real informada. A câmera escolhida nunca é trocada silenciosamente por outra. Se o hardware estiver ocupado por outro aplicativo, será necessário liberá-lo.
+- **Beleza natural:** Porcelana continua automático, com intensidade mais suave e sem modificar rosto, olhos ou nariz por padrão. Alterações de formato são manuais e recuam se o rosto não estiver sendo rastreado com segurança. O rastreamento acontece num Worker; a resolução da câmera é preservada e o site não impõe cota de quadros.
+- **Interação:** a professora pode permitir/revogar desenho do aluno; cada aluno altera somente as próprias anotações. A professora valida e sincroniza o estado para os outros participantes.
+- **Sala flutuante:** reúne vídeos e histórico bilíngue em uma janela Document Picture-in-Picture nos navegadores compatíveis. O fallback é uma janela comum, explicitamente identificada, que pode ficar atrás do PowerPoint.
+- **Leitura:** opções Pequena (14 px) e Compacta (16 px), com efeito também no celular; conversa única com histórico e rolagem preservados.
+- **Tempo oficial:** a professora usa Tempo da aula → Começar aula, separado da abertura antecipada da sala; pausa/retoma e escolhe 50/60 minutos ou duração personalizada. Contador e opção de tradução persistem no servidor. O aviso de encerramento não derruba a chamada.
+- **Tradução opcional:** a professora pode desligar transcrição e tradução pagas para todos na sala, mantendo os microfones e áudio da chamada. O servidor impede novas sessões de reconhecimento e tradução quando desligadas; os navegadores encerram a conexão ativa. O padrão continua automático ao ligar o microfone.
+- **Consumo:** o painel consulta somente custos confirmados de sessões finalizadas desta sala, em USD, pelo serviço Soniox. Sessões em andamento ainda não aparecem; o total pode ser atualizado depois. O silêncio enquanto conectado pode ser cobrado. Não é estimativa de cobrança por minuto falado nem capacidade ilimitada.
+- **Resumo e tarefas:** rascunho manual e editável com envio à conversa criptografada. Não usa gerador de IA adicional; mensagens digitadas mantêm o texto original, então a professora pode escrever nos dois idiomas.
+
+Migração aditiva: executar `npm run db:migrate` antes de servir a nova API em uma instalação existente. Adiciona `ag_rooms.lesson_settings`, sem alterar transcrições.
+
+Consulte [o diagnóstico desta atualização](docs/ajustes-professora-2026-11-23.md) para verificações e limites.

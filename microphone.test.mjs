@@ -26,3 +26,15 @@ test('capture permission failure is reported and microphone stays off',async()=>
 test('Soniox primes caption audio before waiting for microphone permission and exposes retry on startup failure',async()=>{
  const s=setup();let prepared=false;s.context.profile.speechProvider='soniox';s.localASR.engine=()=> 'server';s.context.window.sonioxASR={prepareCapture(){prepared=true},abort(){}};s.context.navigator.mediaDevices.getUserMedia=async()=>{assert.equal(prepared,true);return s.stream};s.setFailure(Error('captura pausada'));await s.context.startMic();assert.equal(s.context.audioStream,s.stream);assert.equal(s.element('retryCaptions').hidden,false);assert.equal(s.track.stopped,false);assert.match(s.element('mediaStatus').textContent,/captura pausada/);
 });
+
+
+test('a microphone permission arriving after room closure is released instead of published',async()=>{
+ const s=setup();let finish;s.context.navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>finish=resolve);const pending=s.context.startMic();s.context.finished=true;finish(s.stream);await pending;assert.equal(s.track.stopped,true);assert.equal(s.context.audioStream,null);assert.equal(s.calls(),0);assert.equal(s.sent.length,0);
+});
+test('concurrent caption starts for one microphone coalesce and stale failures cannot abort a new stream',async()=>{
+ const s=setup();s.setReady();s.context.audioStream=s.stream;let calls=0,finish;let aborts=0;s.context.window.speechEngine.abort=()=>aborts++;s.context.window.speechEngine.start=()=>{calls++;return new Promise(resolve=>finish=resolve);};const a=s.context.startRecognition(s.stream),b=s.context.startRecognition(s.stream);await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,1);finish({});await Promise.all([a,b]);assert.equal(aborts,0);
+ let rejectOld;s.context.window.speechEngine.start=()=>new Promise((resolve,reject)=>rejectOld=reject);const old=s.context.startRecognition(s.stream);await new Promise(resolve=>setImmediate(resolve));s.context.cancelRecognitionStart();const next={getTracks:()=>[]};s.context.audioStream=next;s.context.window.speechEngine.start=async()=>({});await s.context.startRecognition(next);rejectOld(Error('cancelled older request'));await old;assert.equal(aborts,0);
+});
+test('disabling caption services never blocks the microphone or requests a recognizer',async()=>{
+ const s=setup();s.context.state.lesson={captionsEnabled:false};s.context.profile.speechProvider='soniox';let preparations=0;s.context.window.sonioxASR={prepareCapture(){preparations++;},abort(){}};await s.context.startMic();assert.equal(s.track.stopped,false);assert.equal(s.context.audioStream,s.stream);assert.equal(s.calls(),0);assert.equal(preparations,0);assert.match(s.element('mediaStatus').textContent,/desligadas pela professora/);
+});

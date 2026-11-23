@@ -218,7 +218,7 @@ void main() {
   if (uEven > 0.001) {
     vec3 cv = rgb2ycc(col);
     vec3 wv = rgb2ycc(wide);
-    float spot = smoothstep(0.0, -0.055, cv.x - wv.x);
+    float spot = 1.0 - smoothstep(-0.055, 0.0, cv.x - wv.x);
     float lifted = mix(cv.x, wv.x, spot * 0.85);
     float k = uEven * skin;
     vec3 out_ycc = vec3(

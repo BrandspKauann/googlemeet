@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {publicLessonSettings,updateLessonSettings,lessonSettings} from './cloud/lesson-settings.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -16,7 +17,7 @@ export function createApp(dataDir=path.join(root,'data'),asrConfig={url:'http://
  const fail=(code,message)=>{throw Object.assign(new Error(message),{code})};
  const emit=(r,type,data,to)=>{let list=events.get(r.id)||[];list.push({seq:(list.at(-1)?.seq||0)+1,type,data,to});events.set(r.id,list.slice(-2000))};
  const publicMember=m=>({id:m.id,generation:m.generation||0,name:m.name,language:m.language,role:m.role,status:m.status,online:m.online,media:m.media||{}});
- const state=(r,m)=>({id:r.id,cursor:(events.get(r.id)||[]).at(-1)?.seq||0,title:r.title,teacherLanguage:r.members.find(x=>x.role==='teacher')?.language||'pt',studentLanguage:r.studentLanguage||r.members.find(x=>x.role==='student')?.language||'en',ended:r.ended,ending:!!r.ending,startedAt:r.startedAt,you:publicMember(m),members:r.members.filter(x=>x.status==='accepted'||m.role==='teacher').map(publicMember),transcripts:m.status==='accepted'?r.transcripts:[],iceServers:[{urls:'stun:stun.l.google.com:19302'}],localOnly:true});
+ const state=(r,m)=>({id:r.id,cursor:(events.get(r.id)||[]).at(-1)?.seq||0,title:r.title,lesson:publicLessonSettings(r.lesson,r.endedAt?Date.parse(r.endedAt):Date.now()),teacherLanguage:r.members.find(x=>x.role==='teacher')?.language||'pt',studentLanguage:r.studentLanguage||r.members.find(x=>x.role==='student')?.language||'en',ended:r.ended,ending:!!r.ending,startedAt:r.startedAt,you:publicMember(m),members:r.members.filter(x=>x.status==='accepted'||m.role==='teacher').map(publicMember),transcripts:m.status==='accepted'?r.transcripts:[],iceServers:[{urls:'stun:stun.l.google.com:19302'}],localOnly:true});
  const member=(req,r)=>{const token=req.headers.authorization?.replace(/^Bearer /,'');const m=r.members.find(m=>m.token===token);if(!m)fail(401,'Entrada não autorizada. Abra novamente o link da sala.');return m};
  const accepted=m=>{if(m.status!=='accepted')fail(403,'Aguarde a aprovação da professora.')};
  const teacher=m=>{accepted(m);if(m.role!=='teacher')fail(403,'Somente a professora pode realizar esta ação.')};
@@ -64,8 +65,11 @@ export function createApp(dataDir=path.join(root,'data'),asrConfig={url:'http://
      for(const other of r.members){if(other.online&&Date.now()-(other.lastSeen||0)>15000){other.online=false;emit(r,'members',{})}}
      json({events:list,cursor:all.at(-1)?.seq||since,state:state(r,m)});return;
     }
+    if(action==='usage'){teacher(m);json({available:false,message:'Consumo disponível na versão online com Soniox.'});return;}
     if(req.method!=='POST')fail(405,'Método não permitido.');
+    if(action==='lesson'){teacher(m);if(r.ended||r.ending)fail(409,'Reunião encerrada.');try{r.lesson=updateLessonSettings(r.lesson,await body(req));}catch(e){fail(e.status||400,e.message)}save();emit(r,'lesson',{});json(state(r,m));return;}
     if(action==='asr'){
+     if(!lessonSettings(r.lesson).captionsEnabled)fail(403,'A professora desativou a transcrição e a tradução nesta aula.');
      accepted(m);if(r.ended)fail(409,'Reunião encerrada.');if(!asrConfig.secret)fail(503,'Motor local indisponível. Selecione o reconhecimento do navegador.');
      if((m.asrPending||0)>=2)fail(429,'Motor local atrasado para este participante.');
      m.asrPending=(m.asrPending||0)+1;
@@ -102,7 +106,7 @@ export function createApp(dataDir=path.join(root,'data'),asrConfig={url:'http://
     fail(404,'Ação não encontrada.');
    }
    if(p.startsWith('/api/'))fail(404,'Rota não encontrada.');
-   const safe=['/lesson-presenter.js','/lesson-annotations.js','/lesson-deck.js','/presenter-camera.js','/','/index.html','/style.css','/design.css','/room.js','/presentation.js','/conversation.js','/beauty-camera.js','/beauty-runtime.js','/beauty-clock.js','/compatible-beauty.js','/beauty-cache.js','/interface-language.js','/screen-zoom.js','/local-asr.js','/language-routing.js','/paraformer-asr.js','/paraformer-worker.js','/capture-processor.js','/durable.js','/security.js','/preflight.js','/educational-quotes.js','/asr-licenses.txt','/speech-engine.js','/soniox-asr.js','/asr-utils.js','/live-audio.js','/live-captions.js','/device-asr.js','/whisper-worker.js','/asr-fixture.wav','/asr-compare.html','/asr-compare.js'];if(!/^\/(?:background-runtime|presenter-runtime|lesson-runtime)\/v1\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9._-]+\.(?:js|mjs|wasm|tflite|txt|bcmap|pfb|ttf)$/.test(p)&&!/^\/face-beautifier\/[a-zA-Z0-9._-]+\.(?:js|txt)$/.test(p)&&!safe.includes(p)&&!/^\/openmakeup\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9._-]+\.(?:js|mjs|wasm|task|txt|glsl|png|PNG|glb|json)$/.test(p)&&!/^\/(?:gpupixel|face-tracking|paraformer-runtime)\/[a-zA-Z0-9._-]+\.(?:js|png|txt|wasm)$/.test(p)&&!/^\/asr-runtime\/[a-zA-Z0-9._-]+\.(?:mjs|wasm)$/.test(p))fail(404,'Arquivo não encontrado.');
+   const safe=['/meeting-devices.js','/lesson-companion.js','/lesson-clock.js','/lesson-voice.js','/lesson-presenter.js','/lesson-annotations.js','/lesson-deck.js','/presenter-camera.js','/','/index.html','/style.css','/design.css','/room.js','/presentation.js','/conversation.js','/beauty-camera.js','/beauty-runtime.js','/beauty-clock.js','/compatible-beauty.js','/beauty-cache.js','/interface-language.js','/screen-zoom.js','/local-asr.js','/language-routing.js','/paraformer-asr.js','/paraformer-worker.js','/capture-processor.js','/durable.js','/security.js','/preflight.js','/educational-quotes.js','/asr-licenses.txt','/speech-engine.js','/soniox-asr.js','/asr-utils.js','/live-audio.js','/live-captions.js','/device-asr.js','/whisper-worker.js','/asr-fixture.wav','/asr-compare.html','/asr-compare.js'];if(!/^\/(?:background-runtime|presenter-runtime|lesson-runtime)\/v1\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9._-]+\.(?:js|mjs|wasm|tflite|txt|bcmap|pfb|ttf)$/.test(p)&&!/^\/face-beautifier\/[a-zA-Z0-9._-]+\.(?:js|txt)$/.test(p)&&!safe.includes(p)&&!/^\/openmakeup\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9._-]+\.(?:js|mjs|wasm|task|txt|glsl|png|PNG|glb|json)$/.test(p)&&!/^\/(?:gpupixel|face-tracking|paraformer-runtime)\/[a-zA-Z0-9._-]+\.(?:js|png|txt|wasm)$/.test(p)&&!/^\/asr-runtime\/[a-zA-Z0-9._-]+\.(?:mjs|wasm)$/.test(p))fail(404,'Arquivo não encontrado.');
    const f=path.join(root,'dist',p==='/'?'index.html':p.slice(1));res.writeHead(200,{'Content-Type':/\.png$/i.test(p)?'image/png':p.endsWith('.txt')?'text/plain; charset=utf-8':p.endsWith('.wasm')?'application/wasm':p.endsWith('.wav')?'audio/wav':/\.(js|mjs)$/.test(p)?'text/javascript; charset=utf-8':p.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(fs.readFileSync(f));
   }catch(error){json({error:error.code?error.message:'Falha interna do servidor.'},error.code||500)}
  });return server;

@@ -29,13 +29,14 @@
   if(desired)throw Error('Reconhecimento já ativo.');
   const session={stream,c,failures:[],cancelled:false};desired=session;
   const valid=()=>desired===session&&!session.cancelled;
-  const wrapped={...c,text:(...args)=>c.text(...args),preview:(...args)=>c.preview(...args),reconnect:(show,info)=>{if(!valid())return;c.reconnect?.(show);if(!show||info?.retryable!==true||retryTimer)return;
-   const now=Date.now();session.failures=session.failures.filter(at=>now-at<60000);if(session.failures.length>=3){c.status('Legendas pausadas após três tentativas. Clique em Reconectar legendas. O áudio da chamada continua ligado.');return;}
-   session.failures.push(now);c.status('Reconectando as legendas automaticamente… O áudio da chamada continua ligado.');
-   retryTimer=setTimeout(async()=>{retryTimer=null;if(!valid())return;try{await active?.stop();if(valid())await startOnce(stream,wrapped);}catch(error){if(valid()){c.status('Não foi possível retomar as legendas. '+error.message);c.reconnect?.(true);}}},Math.min(8000,2000*2**(session.failures.length-1)));
-  }};
-  try{await startOnce(stream,wrapped);}catch(error){if(desired===session){session.cancelled=true;desired=null;clearTimeout(retryTimer);retryTimer=null;}throw error;}
+  const retryable=error=>(!error?.status||error.status>=500||error.status===429)&&!/saldo|créditos|permiss|captura.*pausad|navegador pausou|cancelado|not allowed|não suport/i.test(error?.message||'');
+  function schedule(){if(!valid()||retryTimer)return;const now=Date.now();session.failures=session.failures.filter(at=>now-at<60000);const delay=session.failures.length>=3?Math.max(30000,60000-(now-session.failures[0])+1000):Math.min(8000,2000*2**session.failures.length);if(session.failures.length<3)session.failures.push(now);c.status(delay>=30000?'As legendas estão temporariamente indisponíveis. Vou tentar novamente em instantes. O áudio da chamada continua ligado.':'Reconectando as legendas automaticamente… O áudio da chamada continua ligado.');c.reconnect?.(true);
+   retryTimer=setTimeout(async()=>{retryTimer=null;if(!valid())return;try{await active?.stop();if(valid())await startOnce(stream,wrapped);}catch(error){if(valid()){c.status('Não foi possível retomar as legendas. '+error.message);c.reconnect?.(true);if(retryable(error))schedule();}}},delay);
+  }
+  const wrapped={...c,text:(...args)=>c.text(...args),preview:(...args)=>c.preview(...args),reconnect:(show,info)=>{if(!valid())return;c.reconnect?.(show);if(show&&info?.retryable===true)schedule();}};
+  try{await startOnce(stream,wrapped);}catch(error){if(valid()&&retryable(error)){Promise.resolve(c.gap(error.message)).catch(()=>{});schedule();return {unavailable:true};}if(desired===session){session.cancelled=true;desired=null;clearTimeout(retryTimer);retryTimer=null;}throw error;}
  }
+
  function prepareCapture(){if(!preparedContext||preparedContext.state==='closed')preparedContext=new AudioContext();preparedContext.resume().catch(()=>{});}
  function cancelRetries(){if(desired)desired.cancelled=true;desired=null;clearTimeout(retryTimer);retryTimer=null;generation++;}
  window.sonioxDiagnostics=()=>({provider:'soniox',sessions:run,capture:{...captureInfo},lastFailure:lastFailure?{...lastFailure}:null});

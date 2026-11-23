@@ -1,6 +1,7 @@
 import {createSonioxRelay} from './soniox-relay.mjs';
 import {createASRRelay} from './asr-relay.mjs';
 import {createTranslationRelay} from './translation-relay.mjs';
+import {lessonSettings, updateLessonSettings, publicLessonSettings} from './lesson-settings.mjs';
 import {randomBytes,createHash,scrypt as scryptCallback,timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
 const scrypt=promisify(scryptCallback),id=()=>randomBytes(24).toString('hex'),hash=s=>createHash('sha256').update(s).digest('hex');
@@ -52,7 +53,7 @@ export function createCloudHandler(dbProvider,{configured=true,asrRelay=createAS
     const r=(await query('SELECT * FROM ag_rooms WHERE id=$1',[rid]))[0];const all=await query("SELECT *, (online AND last_seen>now()-interval '45 seconds') AS connected FROM ag_participants WHERE room_id=$1 ORDER BY CASE WHEN role='teacher' THEN 0 ELSE 1 END,id",[rid]);const self=all.find(m=>m.id===mid);const publicMember=m=>({id:m.id,name:m.name,language:m.language,role:m.role,status:m.status,online:!!m.connected,generation:m.generation,media:m.media});
     const seq=(await query('SELECT COALESCE(max(seq),0)::text AS cursor FROM ag_events WHERE room_id=$1',[rid]))[0].cursor;
     const iceServers=[{urls:'stun:stun.l.google.com:19302'}];if(process.env.TURN_URL&&process.env.TURN_USERNAME&&process.env.TURN_CREDENTIAL)iceServers.push({urls:process.env.TURN_URL,username:process.env.TURN_USERNAME,credential:process.env.TURN_CREDENTIAL});
-    return {id:rid,title:r.title,teacherLanguage:all.find(m=>m.role==='teacher')?.language||'pt',studentLanguage:r.student_language||all.find(m=>m.role==='student')?.language||'en',startedAt:iso(r.started_at),ended:!!r.ended_at,ending:!!r.end_requested_at&&!r.ended_at,you:publicMember(self),members:all.filter(x=>x.status==='accepted'||self.role==='teacher').map(publicMember),cursor:seq,iceServers,localOnly:false,encrypted:true,incremental:true};
+    return {id:rid,title:r.title,teacherLanguage:all.find(m=>m.role==='teacher')?.language||'pt',studentLanguage:r.student_language||all.find(m=>m.role==='student')?.language||'en',startedAt:iso(r.started_at),lesson:publicLessonSettings(r.lesson_settings,r.ended_at?new Date(r.ended_at).getTime():Date.now()),ended:!!r.ended_at,ending:!!r.end_requested_at&&!r.ended_at,you:publicMember(self),members:all.filter(x=>x.status==='accepted'||self.role==='teacher').map(publicMember),cursor:seq,iceServers,localOnly:false,encrypted:true,incremental:true};
    }
    const transcriptRow=t=>({id:t.id,seq:String(t.seq),memberId:t.member_id,name:t.name,language:t.language,payload:t.payload,clientId:t.client_id,at:iso(t.captured_at)});
    if(action==='state'){send(await roomState(roomId,member.id));return}
@@ -66,13 +67,32 @@ export function createCloudHandler(dbProvider,{configured=true,asrRelay=createAS
     else rows=await query('SELECT t.*,p.name,p.language FROM ag_transcripts t JOIN ag_participants p ON p.id=t.member_id WHERE t.room_id=$1 AND t.seq>$2::bigint ORDER BY t.seq LIMIT 100',[roomId,after]);
     send({records:rows.map(transcriptRow),cursor:rows.at(-1)?String(rows.at(-1).seq):after,more:rows.length===100});return;
    }
+   if(action==='usage'){
+    if(req.method!=='GET')fail(405,'Método não permitido.');teacher();
+    send(typeof sonioxRelay.usage==='function'?await sonioxRelay.usage(room):{available:false,estimated:true});return;
+   }
+   if(action==='lesson'){
+    if(req.method!=='POST')fail(405,'Método não permitido.');teacher();if(room.ended_at||room.end_requested_at)fail(409,'Reunião encerrada ou encerrando.');
+    const patch=await body(req);let updated=false;
+    for(let attempt=0;attempt<3&&!updated;attempt++){
+     if(room.ended_at||room.end_requested_at)fail(409,'Reunião encerrada ou encerrando.');
+     const previous=room.lesson_settings||{},next=updateLessonSettings(previous,patch);
+     const rows=await query('UPDATE ag_rooms SET lesson_settings=$2::jsonb WHERE id=$1 AND lesson_settings=$3::jsonb AND ended_at IS NULL AND end_requested_at IS NULL RETURNING lesson_settings',[roomId,JSON.stringify(next),JSON.stringify(previous)]);
+     if(rows.length){room.lesson_settings=rows[0].lesson_settings;updated=true;}
+     else room=(await query('SELECT * FROM ag_rooms WHERE id=$1',[roomId]))[0];
+    }
+    if(!updated)fail(409,'A configuração mudou em outra janela. Tente novamente.');
+    await event(roomId,'lesson');send(await roomState(roomId,member.id));return;
+   }
    if(action==='soniox'){
     if(req.method!=='POST')fail(405,'Método não permitido.');accepted();if(room.ended_at||room.end_requested_at)fail(409,'Reunião encerrada ou encerrando.');
+    if(!lessonSettings(room.lesson_settings).captionsEnabled)fail(403,'A professora desativou a transcrição e a tradução nesta aula.');
     const rate=(await query("INSERT INTO ag_rate_limits(key,window_start,count) VALUES($1,now(),1) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN 1 ELSE ag_rate_limits.count+1 END,window_start=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN now() ELSE ag_rate_limits.window_start END RETURNING count",[hash('soniox:'+member.id)]))[0];if(rate.count>4)fail(429,'Aguarde um momento antes de reconectar as legendas.');
     const host=(await query("SELECT language FROM ag_participants WHERE room_id=$1 AND role='teacher' LIMIT 1",[roomId]))[0];send(await sonioxRelay.session(member,{...room,teacher_language:host?.language||'pt'}));return;
    }
    if(action==='asr'){
     if(req.method!=='POST')fail(405,'Método não permitido.');accepted();if(room.ended_at)fail(409,'Reunião encerrada.');
+    if(!lessonSettings(room.lesson_settings).captionsEnabled)fail(403,'A professora desativou a transcrição e a tradução nesta aula.');
     if(!asrRelay.configured())fail(503,'Servidor de voz não configurado.');
     const rate=(await query("INSERT INTO ag_rate_limits(key,window_start,count) VALUES($1,now(),1) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN 1 ELSE ag_rate_limits.count+1 END,window_start=CASE WHEN ag_rate_limits.window_start<now()-interval '1 minute' THEN now() ELSE ag_rate_limits.window_start END RETURNING count",[hash('asr:'+member.id)]))[0];
     if(rate.count>45)fail(429,'Muitos trechos de voz. Aguarde um momento.');
@@ -80,6 +100,7 @@ export function createCloudHandler(dbProvider,{configured=true,asrRelay=createAS
    }
    if(action==='translate'){
     if(req.method!=='POST')fail(405,'Método não permitido.');accepted();
+    if(!lessonSettings(room.lesson_settings).captionsEnabled)fail(403,'A professora desativou a transcrição e a tradução nesta aula.');
     if(!translationRelay.configured())fail(503,'Tradução no servidor não configurada.');
     const b=await body(req);if(typeof b.text!=='string'||!b.text.trim())fail(400,'Informe um texto para traduzir.');if(b.text.length>2000)fail(413,'Texto muito grande para traduzir.');
     const assigned=await query("SELECT language,role FROM ag_participants WHERE room_id=$1 AND status='accepted' ORDER BY id",[roomId]);
