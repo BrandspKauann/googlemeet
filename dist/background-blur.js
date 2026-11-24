@@ -18,16 +18,16 @@
    return {stream:new MediaStream([output]),stop,setIntensity:value=>worker.postMessage({type:'intensity',value})};
   }catch(error){stop();throw error;}
  }
- async function pause(error){const old=pipeline;pipeline=null;try{await publish?.(null);}finally{old?.stop();status.textContent='Desfoque indisponível. Desative o fundo borrado para retomar a câmera.';}}
+ async function pause(error){const old=pipeline;pipeline=null;try{await publish?.(input);}finally{old?.stop();status.textContent='Desfoque indisponível. Sua câmera continua sem desfoque.';}}
  async function apply(){
   const ticket=++generation;preparation?.abort();preparation=new AbortController();const controller=preparation,old=pipeline;pipeline=null;
   if(!input){old?.stop();status.textContent=enabled?'Desfoque selecionado. Ligue a câmera para aplicar.':'';sync();return;}
   if(!enabled){try{await publish?.(input);}finally{old?.stop();status.textContent='';}sync();return;}
-  status.textContent='Preparando desfoque… A câmera fica pausada até o efeito estar pronto.';
+  status.textContent='Preparando desfoque… Sua câmera continua na chamada.';
   try{
-   await publish?.(null);old?.stop();const next=await create(input,controller.signal);
+   await publish?.(input);old?.stop();const next=await create(input,controller.signal);
    if(ticket!==generation){next.stop();return;}pipeline=next;next.setIntensity(intensity);await publish?.(next.stream);status.textContent='Fundo borrado. O efeito também aparece para a outra pessoa.';
-  }catch(error){if(ticket===generation&&!controller.signal.aborted){console.warn('Desfoque de fundo:',error.message);pipeline?.stop();pipeline=null;status.textContent='Não foi possível borrar o fundo. Desative o efeito e tente novamente.';}}
+  }catch(error){if(ticket===generation&&!controller.signal.aborted){console.warn('Desfoque de fundo:',error.message);pipeline?.stop();pipeline=null;await publish?.(input);status.textContent='Não foi possível borrar o fundo. Sua câmera continua sem desfoque.';}}
   finally{sync();}
  }
  slider.oninput=()=>{const parsed=Number(slider.value);if(!Number.isFinite(parsed))return;intensity=Math.max(1,Math.min(100,parsed));slider.value=String(intensity);value.textContent=`${intensity}%`;pipeline?.setIntensity(intensity);};

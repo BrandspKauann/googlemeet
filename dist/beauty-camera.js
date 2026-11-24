@@ -41,7 +41,7 @@
     status('Preparando efeito de beleza… Sua câmera original continua na chamada.');const next=await createPipeline(raw,ticket);if(!next)return;if(ticket!==generation){next.stop();return}pipeline=next;if(onStream)await onStream(next.stream);
   }catch(error){if(ticket===generation)await recover(error)}finally{applying--;sync()}}
   window.beautyCamera={
-    configure(state){teacher=state.you.status==='accepted';const roomKey=state.id+':'+state.you.id;if(teacher&&configuredRoom!==roomKey){configuredRoom=roomKey;restore(state);sync();}button.hidden=!teacher;button.disabled=!!state.ended||!!state.ending||state.you.status!=='accepted';if(!teacher&&dialog.open)dialog.close()},
+    configure(state){teacher=state.you.status==='accepted';const roomKey=state.id+':'+state.you.id;if(teacher&&configuredRoom!==roomKey){configuredRoom=roomKey;restore(state);if(state.you.role==='student')enabled=false;sync();}button.hidden=!teacher;button.disabled=!!state.ended||!!state.ending||state.you.status!=='accepted';if(!teacher&&dialog.open)dialog.close()},
     async attach(stream,callback){if(raw&&raw!==stream){generation++;preparation?.abort();pipeline?.stop();pipeline=null;}raw=stream;onStream=callback;if(teacher)await apply();preview()},
     detach(){generation++;preparation?.abort();preparation=null;pipeline?.stop();pipeline=null;raw=null;onStream=null;comparing=false;el('beautyEnabled').disabled=false;preview();status(enabled?'Efeito selecionado. Ligue a câmera para aplicar.':'Desligado. Sua câmera continua original.')},
     close(){this.detach();dialog.close()}
