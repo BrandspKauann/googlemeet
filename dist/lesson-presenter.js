@@ -7,7 +7,7 @@
   document.querySelector('.room-actions').prepend(openButton); stage.querySelector('.screenhead').after(bar);
   const content = document.createElement('div'); content.id = 'lessonContent'; viewport.append(content);
   const camera = document.createElement('div'); camera.id = 'presenterOverlay'; camera.hidden = true;
-  const foreground = document.createElement('canvas'); foreground.id = 'presenterCanvas'; foreground.setAttribute('aria-label', 'Câmera da professora na apresentação');
+  const foreground = document.createElement('canvas'); foreground.id = 'presenterCanvas'; foreground.setAttribute('aria-label', 'Câmera de quem apresenta');
   const badge = document.createElement('span'); badge.className = 'presenter-caption'; camera.append(foreground, badge); content.append(camera);
   const sourceCanvas = document.createElement('canvas'); sourceCanvas.id = 'lessonSource'; sourceCanvas.hidden = true; document.body.append(sourceCanvas);
   let hooks, current, controller, cutout, cameraTrack, cameraMirror, session = '', page = '', enabled = true, allowStudents = true, localSource = null, deckActive = false, loading = false, disposed = false;
@@ -61,15 +61,15 @@
   }
   function syncCamera() {
     const stream = current?.camera, track = stream?.getVideoTracks()[0];
-    const show = current?.teacherPresenting && (isTeacher() ? enabled : remoteEnabled) && track?.readyState === 'live';
+    const show = (current?.presenting ?? current?.teacherPresenting) && (current?.presenter?.role === 'student' || (isTeacher() ? enabled : remoteEnabled)) && track?.readyState === 'live';
     if (!show) { resetCamera(); return; }
-    const mirror = isTeacher(); camera.hidden = false;
+    const mirror = current?.presenter ? current.presenter.id === current.you.id : isTeacher(); camera.hidden = false;
     if (cameraTrack === track && cameraMirror === mirror) return;
-    resetCamera(); camera.hidden = false; cameraTrack = track; cameraMirror = mirror; badge.textContent = current.teacher?.name || 'Professora';
+    resetCamera(); camera.hidden = false; cameraTrack = track; cameraMirror = mirror; badge.textContent = (current.presenter || current.teacher)?.name || 'Participante';
     cutout = window.presenterCamera.attach(stream, foreground, {mirror, onStatus: result => {
       camera.classList.toggle('fallback', result.state === 'fallback');
-      badge.textContent = (current?.teacher?.name || 'Professora') + (result.state === 'loading' ? ' · Preparando recorte…' : result.state === 'fallback' ? ' · Sem recorte neste navegador' : '');
-    }, onError: () => { badge.textContent = (current?.teacher?.name || 'Professora') + ' · Câmera sem recorte'; }});
+      badge.textContent = ((current?.presenter || current?.teacher)?.name || 'Participante') + (result.state === 'loading' ? ' · Preparando recorte…' : result.state === 'fallback' ? ' · Sem recorte neste navegador' : '');
+    }, onError: () => { badge.textContent = ((current?.presenter || current?.teacher)?.name || 'Participante') + ' · Câmera sem recorte'; }});
   }
   function sync(value) {
     if (disposed) return; current = value;
